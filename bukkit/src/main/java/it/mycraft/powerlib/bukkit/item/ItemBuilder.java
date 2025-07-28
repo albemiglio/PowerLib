@@ -399,54 +399,80 @@ public class ItemBuilder implements Cloneable {
      * @return The ItemStack
      */
     public ItemStack build() {
+        // Fail‐safe defaults
+        if (this.material == null) {
+            this.material = "STONE";
+        }
+        if (this.name == null) {
+            this.name = "";
+        }
+        if (this.lore == null) {
+            this.lore = new ArrayList<>();
+        }
+
         for (String placeholder : placeholders.keySet()) {
             Object value = placeholders.getOrDefault(placeholder, "NULL");
             setName(this.name.replace(placeholder, value.toString()));
-
             setLore(this.lore.stream().map((s) -> s.replace(placeholder, value.toString()))
                     .collect(Collectors.toList()));
         }
         String name = this.name;
         List<String> lore = this.lore == null ? null : new ArrayList<>(this.lore);
-        ItemStack itemStack = null;
-        if (material.startsWith("itemsadder:") && isUsingItemsAdder()) {
-            String customItem = material.replace("itemsadder:", "");
-            if (CustomStack.isInRegistry(customItem)) {
-                itemStack = CustomStack.getInstance(customItem).getItemStack();
-            } else material = "BARRIER";
-        }
-        else {
-            Material m = Material.getMaterial(material);
-            itemStack = new ItemStack(m, amount, metadata);
+
+        ItemStack itemStack;
+        try {
+            if (material.startsWith("itemsadder:") && isUsingItemsAdder()) {
+                String customItem = material.substring("itemsadder:".length());
+                if (CustomStack.isInRegistry(customItem)) {
+                    itemStack = CustomStack.getInstance(customItem).getItemStack();
+                } else {
+                    // fallback if custom stack missing
+                    itemStack = new ItemStack(Material.BARRIER, amount, metadata);
+                }
+            } else {
+                Material m = Material.getMaterial(material);
+                if (m == null) {
+                    // fallback if material invalid
+                    m = Material.STONE;
+                }
+                itemStack = new ItemStack(m, amount, metadata);
+            }
+        } catch (Exception e) {
+            // on any error, return a simple stone
+            Bukkit.getLogger().warning("ItemBuilder.build() failed: " + e.getMessage());
+            return new ItemStack(Material.STONE, 1);
         }
 
-        if (itemStack.getType().isAir())
-            return itemStack;
+        if (itemStack == null || itemStack.getType().isAir()) {
+            return itemStack == null ? new ItemStack(Material.STONE, 1) : itemStack;
+        }
 
         ItemMeta itemMeta = itemStack.getItemMeta();
-
-        if (name != null)
-            itemMeta.setDisplayName(name);
-
-        if (lore != null)
-            itemMeta.setLore(lore);
-
-        if (glowing && enchantments.isEmpty()) {
-            itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
-            itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
-        }
-
-        if (!enchantments.isEmpty()) {
-            for (Enchantment enchantment : enchantments.keySet()) {
-                itemMeta.addEnchant(enchantment, enchantments.get(enchantment), true);
+        if (itemMeta != null) {
+            if (!name.isEmpty()) {
+                itemMeta.setDisplayName(name);
             }
-        }
+            if (!lore.isEmpty()) {
+                itemMeta.setLore(lore);
+            }
 
-        if (customModelData != 0) {
-            itemMeta.setCustomModelData(customModelData);
-        }
+            if (glowing && enchantments.isEmpty()) {
+                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
+            }
 
-        itemStack.setItemMeta(itemMeta);
+            if (!enchantments.isEmpty()) {
+                for (Enchantment enchantment : enchantments.keySet()) {
+                    itemMeta.addEnchant(enchantment, enchantments.get(enchantment), true);
+                }
+            }
+
+            if (customModelData != 0) {
+                itemMeta.setCustomModelData(customModelData);
+            }
+
+            itemStack.setItemMeta(itemMeta);
+        }
 
         if (itemStack.getType() == Material.POTION && !potions.isEmpty()) {
             PotionMeta potionMeta = (PotionMeta) itemStack.getItemMeta();
