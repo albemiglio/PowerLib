@@ -1,0 +1,5 @@
+name: PowerLib
+author: AlbeMiglio
+authors: [AlbeMiglio, FranFrau]
+main: it.mycraft.powerlib.bungee.PowerLibPlugin
+version: 1.2.16-SNAPSHOT

@@ -33,10 +33,16 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.stream.Collectors;
 
-
 public class ItemBuilder implements Cloneable {
 
-    public static boolean isUsingItemsAdder() { return Bukkit.getPluginManager().isPluginEnabled("ItemsAdder"); }
+    public static boolean isUsingItemsAdder() {
+        return Bukkit.getPluginManager().isPluginEnabled("ItemsAdder");
+    }
+
+    public static boolean isUsingNexo() {
+        return Bukkit.getPluginManager().isPluginEnabled("Nexo");
+    }
+
     @Getter
     private String material;
     @Getter
@@ -59,6 +65,8 @@ public class ItemBuilder implements Cloneable {
     private HashMap<String, Object> placeholders;
     private SkullMeta skullMeta;
     private Pair<Optional<String>, Optional<String>> itemsAdderData;
+    private final Map<NamespacedKey, Pair<PersistentDataType, Object>> persistentData;
+    private ItemStack baseItemStack;
 
     public ItemBuilder() {
         lore = new ArrayList<>();
@@ -66,6 +74,7 @@ public class ItemBuilder implements Cloneable {
         potions = new HashMap<>();
         placeholders = new HashMap<>();
         itemsAdderData = new Pair<>(Optional.empty(), Optional.empty());
+        persistentData = new HashMap<>();
     }
 
     /**
@@ -86,7 +95,7 @@ public class ItemBuilder implements Cloneable {
      * @return The ItemBuilder
      */
     public ItemBuilder setMaterial(String material) {
-        if (material.length() > 11 && !material.startsWith("itemsadder:")) {
+        if (material.length() > 11 && !material.startsWith("itemsadder:") && !material.startsWith("nexo:")) {
             Optional<Material> optMaterial = Enums.getIfPresent(Material.class, material).toJavaUtil();
             if (optMaterial.isPresent())
                 this.material = optMaterial.get().toString();
@@ -164,7 +173,6 @@ public class ItemBuilder implements Cloneable {
         return this;
     }
 
-
     /**
      * Sets the potion's effect
      *
@@ -183,7 +191,8 @@ public class ItemBuilder implements Cloneable {
      * @param type      The potion effect type to add
      * @param duration  The duration measured in ticks
      * @param level     The amplifier
-     * @param overwrite true if any existing effect of the same type should be overwritten
+     * @param overwrite true if any existing effect of the same type should be
+     *                  overwritten
      * @return The ItemBuilder
      */
     public ItemBuilder setPotionEffect(PotionEffectType type, int duration, int level, boolean overwrite) {
@@ -196,11 +205,13 @@ public class ItemBuilder implements Cloneable {
      * @param type      The potion effect type to add
      * @param duration  The duration measured in ticks
      * @param level     The amplifier
-     * @param overwrite true if any existing effect of the same type should be overwritten
+     * @param overwrite true if any existing effect of the same type should be
+     *                  overwritten
      * @param ambient   The ambient status
      * @return The ItemBuilder
      */
-    public ItemBuilder setPotionEffect(PotionEffectType type, int duration, int level, boolean overwrite, boolean ambient) {
+    public ItemBuilder setPotionEffect(PotionEffectType type, int duration, int level, boolean overwrite,
+            boolean ambient) {
         return setPotionEffect(type, duration, level, overwrite, ambient, true);
     }
 
@@ -210,12 +221,14 @@ public class ItemBuilder implements Cloneable {
      * @param type      The potion effect type to add
      * @param duration  The duration measured in ticks
      * @param level     The amplifier
-     * @param overwrite true if any existing effect of the same type should be overwritten
+     * @param overwrite true if any existing effect of the same type should be
+     *                  overwritten
      * @param ambient   The ambient status
      * @param particles The particle status
      * @return The ItemBuilder
      */
-    public ItemBuilder setPotionEffect(PotionEffectType type, int duration, int level, boolean overwrite, boolean ambient, boolean particles) {
+    public ItemBuilder setPotionEffect(PotionEffectType type, int duration, int level, boolean overwrite,
+            boolean ambient, boolean particles) {
         potions.put(new PotionEffect(type, duration, (level - 1), overwrite, ambient), particles);
         return this;
     }
@@ -259,16 +272,32 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
+     * Sets a persistent data to the item
+     *
+     * @param key   The key
+     * @param type  The type
+     * @param value The value
+     * @param <T>   The type of the value
+     * @param <Z>   The type of the primary data
+     * @return The ItemBuilder
+     */
+    public <T, Z> ItemBuilder setPersistentData(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
+        persistentData.put(key, new Pair<>(type, value));
+        return this;
+    }
+
+    /**
      * Clones another itemstack into the builder and stores its data
      *
      * @param itemStack The ItemStack to clone
      * @return The ItemBuilder
      */
     public ItemBuilder clone(ItemStack itemStack) {
-        if(itemStack == null || itemStack.getType() == Material.AIR) {
+        if (itemStack == null || itemStack.getType() == Material.AIR) {
             return this;
         }
 
+        this.baseItemStack = itemStack.clone();
         ItemMeta itemMeta = itemStack.getItemMeta();
         material = itemStack.getType().toString();
         amount = itemStack.getAmount();
@@ -302,10 +331,21 @@ public class ItemBuilder implements Cloneable {
             }
         }
 
-        NBTItem nbtItem = new NBTItem(itemStack);
-        NBTCompound comp = nbtItem.getCompound("itemsadder");
-        if(isUsingItemsAdder() && comp != null) {
-            itemsAdderData = new Pair<>(Optional.ofNullable(comp.getString("namespace")), Optional.ofNullable(comp.getString("id")));
+        if (isUsingItemsAdder()) {
+            try {
+                Class<?> customStackClass = Class.forName("dev.lone.itemsadder.api.CustomStack");
+                java.lang.reflect.Method byItemStack = customStackClass.getMethod("byItemStack", ItemStack.class);
+                Object customStack = byItemStack.invoke(null, itemStack);
+                if (customStack != null) {
+                    java.lang.reflect.Method getNamespacedID = customStackClass.getMethod("getNamespacedID");
+                    String namespacedID = (String) getNamespacedID.invoke(customStack);
+                    if (namespacedID != null && namespacedID.contains(":")) {
+                        String[] split = namespacedID.split(":");
+                        itemsAdderData = new Pair<>(Optional.of(split[0]), Optional.of(split[1]));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
         }
         return this;
     }
@@ -320,7 +360,8 @@ public class ItemBuilder implements Cloneable {
     private ItemStack setCustomSkin(ItemBuilder itemBuilder, String url) {
         int version = ReflectionAPI.getNumericalVersion();
         String material = version >= 13 ? "PLAYER_HEAD" : "SKULL_ITEM";
-        ItemStack skull = itemBuilder.setMaterial(material).setMetaData((byte) 3).setAmount(1).setName(name).setLore(lore).build();
+        ItemStack skull = itemBuilder.setMaterial(material).setMetaData((byte) 3).setAmount(1).setName(name)
+                .setLore(lore).build();
         SkullMeta skullMeta = (SkullMeta) skull.getItemMeta();
 
         GameProfile profile = new GameProfile(UUID.randomUUID(), null);
@@ -429,6 +470,16 @@ public class ItemBuilder implements Cloneable {
                     // fallback if custom stack missing
                     itemStack = new ItemStack(Material.BARRIER, amount, metadata);
                 }
+            } else if (material.startsWith("nexo:") && isUsingNexo()) {
+                String customItem = material.substring("nexo:".length());
+                com.nexomc.nexo.items.ItemBuilder nexoBuilder = com.nexomc.nexo.api.NexoItems.itemFromId(customItem);
+                if (nexoBuilder != null) {
+                    itemStack = nexoBuilder.build();
+                    itemStack.setAmount(amount);
+                } else {
+                    // fallback if custom stack missing
+                    itemStack = new ItemStack(Material.BARRIER, amount, metadata);
+                }
             } else {
                 Material m = Material.getMaterial(material);
                 if (m == null) {
@@ -449,15 +500,15 @@ public class ItemBuilder implements Cloneable {
 
         ItemMeta itemMeta = itemStack.getItemMeta();
         if (itemMeta != null) {
-            if (!name.isEmpty()) {
+            if (name != null && !name.isEmpty()) {
                 itemMeta.setDisplayName(name);
             }
-            if (!lore.isEmpty()) {
+            if (lore != null && !lore.isEmpty()) {
                 itemMeta.setLore(lore);
             }
 
             if (glowing && enchantments.isEmpty()) {
-                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
@@ -471,6 +522,12 @@ public class ItemBuilder implements Cloneable {
                 itemMeta.setCustomModelData(customModelData);
             }
 
+            if (!persistentData.isEmpty()) {
+                for (Map.Entry<NamespacedKey, Pair<PersistentDataType, Object>> entry : persistentData.entrySet()) {
+                    itemMeta.getPersistentDataContainer().set(entry.getKey(), entry.getValue().getLeft(), entry.getValue().getRight());
+                }
+            }
+
             itemStack.setItemMeta(itemMeta);
         }
 
@@ -482,12 +539,18 @@ public class ItemBuilder implements Cloneable {
             itemStack.setItemMeta(potionMeta);
         }
 
-        if(itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
-            NBTItem nbtItem = new NBTItem(itemStack);
-            NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
-            comp.setString("namespace", itemsAdderData.getLeft().get());
-            comp.setString("id", itemsAdderData.getRight().get());
-            nbtItem.applyNBT(itemStack);
+        if (itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
+            try {
+                // Apply ItemsAdder NBT in a safe way if possible, or just skip if it's already an ItemsAdder item
+                // Recent ItemsAdder versions might already have this from the initial construction
+                NBTItem nbtItem = new NBTItem(itemStack);
+                NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
+                comp.setString("namespace", itemsAdderData.getLeft().get());
+                comp.setString("id", itemsAdderData.getRight().get());
+                nbtItem.applyNBT(itemStack);
+            } catch (Exception e) {
+                Bukkit.getLogger().warning("Failed to apply ItemsAdder NBT: " + e.getMessage());
+            }
         }
         return itemStack;
     }
@@ -506,7 +569,8 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
-     * This method is used for extracting the minecraft.net link from the base64 text
+     * This method is used for extracting the minecraft.net link from the base64
+     * text
      *
      * @param base64 The base64 text
      * @return The minecraft.net link
@@ -551,7 +615,8 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
-     * Looks for any item's info in the provided FileConfiguration and builds an ItemStack from it
+     * Looks for any item's info in the provided FileConfiguration and builds an
+     * ItemStack from it
      *
      * @param fileConfiguration The file configuration to get the item's info from
      * @param path              The section where the item's info are stored
@@ -562,7 +627,8 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
-     * Looks for any item's info in the provided NATIVE Configuration and builds an ItemStack from it
+     * Looks for any item's info in the provided NATIVE Configuration and builds an
+     * ItemStack from it
      *
      * @param configuration NATIVE CONFIGURATION to get the item's info from
      * @param path          The section where the item's info are stored
@@ -587,8 +653,8 @@ public class ItemBuilder implements Cloneable {
                     break;
                 case "material":
                     newPath = path + ".material";
-                    itemMaterial = itemLegacy ? "LEGACY_" + configuration.getString(newPath) :
-                            configuration.getString(newPath);
+                    itemMaterial = itemLegacy ? "LEGACY_" + configuration.getString(newPath)
+                            : configuration.getString(newPath);
                     break;
                 case "name":
                     newPath = path + ".name";

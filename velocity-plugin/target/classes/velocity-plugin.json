@@ -1,0 +1,2 @@
+{"id":"powerlib","name":"PowerLib","version":"1.2.16-SNAPSHOT","authors":["AlbeMiglio","FranFrau"],
+  "dependencies":[],"main":"it.mycraft.powerlib.velocity.PowerLibPlugin"}
