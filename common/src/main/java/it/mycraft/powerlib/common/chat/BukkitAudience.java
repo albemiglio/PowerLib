@@ -4,10 +4,11 @@ public class BukkitAudience extends PlatformAudience {
 
     protected BukkitAudience() {
         try {
-            audienceAdapterClass = Class.forName("it.mycraft.powerlib.bukkit.adapters.AudienceAdapter");
+            String adapterPackage = BukkitAudience.class.getPackage().getName()
+                    .replace(".common.chat", ".bukkit.adapters");
+            audienceAdapterClass = Class.forName(adapterPackage + ".AudienceAdapter");
             commandSenderClass = Class.forName("org.bukkit.command.CommandSender");
-        }
-        catch (ClassNotFoundException e) {
+        } catch (ClassNotFoundException e) {
             sendError();
         }
     }
