@@ -24,6 +24,7 @@
         <module>velocity</module>
         <module>velocity-plugin</module>
         <module>all</module>
+        <module>minimessage</module>
         <module>tests</module>
     </modules>
 

@@ -165,6 +165,42 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
+     * Sets the item's custom name using a MiniMessage tag string.
+     * Requires powerlib-minimessage on the classpath.
+     *
+     * @param miniInput The MiniMessage-formatted name
+     * @return The ItemBuilder
+     */
+    public ItemBuilder setNameMini(String miniInput) {
+        return setName(it.mycraft.powerlib.minimessage.MiniMessageSupport.parseLegacy(miniInput));
+    }
+
+    /**
+     * Sets the item's lore from a list of MiniMessage tag strings.
+     * Requires powerlib-minimessage on the classpath.
+     *
+     * @param miniInputs The MiniMessage-formatted lore lines
+     * @return The ItemBuilder
+     */
+    public ItemBuilder setLoreMini(java.util.List<String> miniInputs) {
+        java.util.List<String> rendered = new java.util.ArrayList<>(miniInputs.size());
+        for (String s : miniInputs) rendered.add(it.mycraft.powerlib.minimessage.MiniMessageSupport.parseLegacy(s));
+        return setLore(rendered);
+    }
+
+    /**
+     * Appends MiniMessage tag strings to the item's lore.
+     * Requires powerlib-minimessage on the classpath.
+     *
+     * @param miniInputs The MiniMessage-formatted lore lines to append
+     * @return The ItemBuilder
+     */
+    public ItemBuilder addLoreMini(String... miniInputs) {
+        for (String s : miniInputs) this.lore.add(it.mycraft.powerlib.minimessage.MiniMessageSupport.parseLegacy(s));
+        return this;
+    }
+
+    /**
      * Sets the item's enchantment
      *
      * @param enchantment The enchantment

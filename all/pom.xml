@@ -117,6 +117,12 @@
         </dependency>
         <dependency>
             <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-minimessage</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
             <artifactId>powerlib-common</artifactId>
             <version>${project.parent.version}</version>
             <scope>compile</scope>

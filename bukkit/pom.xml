@@ -62,6 +62,12 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-minimessage</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.19.4-R0.1-SNAPSHOT</version>

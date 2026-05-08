@@ -53,6 +53,32 @@ public class Message {
         this(multiLineMessages, true);
     }
 
+    /**
+     * Builds a Message whose content is a MiniMessage tag-set, parsed and
+     * rendered as legacy section codes. Requires `powerlib-minimessage` on
+     * the runtime classpath; otherwise falls back to the literal text.
+     */
+    public static Message miniMessage(String input) {
+        return new Message(invokeMini(input), false);
+    }
+
+    public static Message miniMessage(String... lines) {
+        java.util.List<String> rendered = new java.util.ArrayList<>(lines.length);
+        for (String line : lines) rendered.add(invokeMini(line));
+        return new Message(rendered, false);
+    }
+
+    private static String invokeMini(String input) {
+        try {
+            String packageName = Message.class.getPackage().getName();
+            String mmPackage = packageName.replace(".common.chat", ".minimessage");
+            Class<?> clazz = Class.forName(mmPackage + ".MiniMessageSupport");
+            return (String) clazz.getMethod("parseLegacy", String.class).invoke(null, input);
+        } catch (ReflectiveOperationException e) {
+            return input == null ? "" : input;
+        }
+    }
+
     public Message addPlaceHolder(String placeholder, Object value) {
         singleLineMessage = singleLineMessage.content(singleLineMessage.content().replace(placeholder, value.toString()));
         multiLineMessages.replaceAll(s -> s.content(s.content().replace(placeholder, value.toString())));
