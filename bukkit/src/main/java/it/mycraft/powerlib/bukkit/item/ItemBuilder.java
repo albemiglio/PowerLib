@@ -7,6 +7,8 @@ import de.tr7zw.changeme.nbtapi.NBTCompound;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import it.mycraft.powerlib.bukkit.compat.ItemsAdderBridge;
 import it.mycraft.powerlib.bukkit.compat.RegistryCompat;
+import it.mycraft.powerlib.bukkit.item.applier.PersistentDataApplier;
+import it.mycraft.powerlib.bukkit.item.applier.PersistentEntry;
 import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
 import it.mycraft.powerlib.common.chat.Message;
@@ -32,6 +34,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 
@@ -62,6 +65,7 @@ public class ItemBuilder implements Cloneable {
     private HashMap<String, Object> placeholders;
     private SkullMeta skullMeta;
     private Pair<Optional<String>, Optional<String>> itemsAdderData;
+    private final Map<NamespacedKey, PersistentEntry<?, ?>> persistentData = new LinkedHashMap<>();
 
     public ItemBuilder() {
         lore = new ArrayList<>();
@@ -258,6 +262,15 @@ public class ItemBuilder implements Cloneable {
 
     public ItemBuilder setCustomModelData(int customModelData) {
         this.customModelData = customModelData;
+        return this;
+    }
+
+    /**
+     * Stores a typed persistent data entry that will be applied to the
+     * built item's PersistentDataContainer.
+     */
+    public <T, Z> ItemBuilder setPersistentData(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
+        persistentData.put(key, new PersistentEntry<>(type, value));
         return this;
     }
 
@@ -466,6 +479,8 @@ public class ItemBuilder implements Cloneable {
             if (customModelData != 0) {
                 itemMeta.setCustomModelData(customModelData);
             }
+
+            PersistentDataApplier.apply(itemMeta, persistentData);
 
             itemStack.setItemMeta(itemMeta);
         }
