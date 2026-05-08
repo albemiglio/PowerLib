@@ -96,9 +96,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-components</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
-            <version>1.20.4-R0.1-SNAPSHOT</version>
+            <version>1.20.6-R0.1-SNAPSHOT</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

@@ -36,6 +36,7 @@ import org.bukkit.potion.PotionEffectType;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.LinkedHashMap;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -71,6 +72,7 @@ public class ItemBuilder implements Cloneable {
     private SkullMeta skullMeta;
     private Pair<Optional<String>, Optional<String>> itemsAdderData;
     private final Map<NamespacedKey, PersistentEntry<?, ?>> persistentData = new LinkedHashMap<>();
+    private final List<Consumer<ItemMeta>> buildSteps = new ArrayList<>();
 
     public ItemBuilder() {
         lore = new ArrayList<>();
@@ -316,6 +318,19 @@ public class ItemBuilder implements Cloneable {
     }
 
     /**
+     * Adds a build step Consumer that will be applied to the ItemMeta
+     * during build(), after all other meta operations.
+     * Used by powerlib-components to apply DataComponent setters.
+     *
+     * @param step The Consumer to apply to the ItemMeta
+     * @return The ItemBuilder
+     */
+    public ItemBuilder addBuildStep(Consumer<ItemMeta> step) {
+        buildSteps.add(step);
+        return this;
+    }
+
+    /**
      * Clones another itemstack into the builder and stores its data
      *
      * @param itemStack The ItemStack to clone
@@ -526,6 +541,10 @@ public class ItemBuilder implements Cloneable {
             }
 
             PersistentDataApplier.apply(itemMeta, persistentData);
+
+            for (Consumer<ItemMeta> step : buildSteps) {
+                step.accept(itemMeta);
+            }
 
             itemStack.setItemMeta(itemMeta);
         }
