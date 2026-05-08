@@ -102,6 +102,16 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-api</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-bukkit</artifactId>
+            <version>${project.parent.version}</version>
+        </dependency>
+        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.20.6-R0.1-SNAPSHOT</version>

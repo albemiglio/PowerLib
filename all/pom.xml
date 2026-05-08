@@ -123,6 +123,18 @@
         </dependency>
         <dependency>
             <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-api</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-bukkit</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
             <artifactId>powerlib-common</artifactId>
             <version>${project.parent.version}</version>
             <scope>compile</scope>

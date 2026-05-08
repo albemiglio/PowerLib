@@ -26,6 +26,8 @@
         <module>all</module>
         <module>minimessage</module>
         <module>components</module>
+        <module>commands-api</module>
+        <module>commands-bukkit</module>
         <module>tests</module>
     </modules>
 
