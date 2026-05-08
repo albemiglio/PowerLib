@@ -30,7 +30,7 @@ Development builds are always available at: **https://ci.codemc.io/job/AlbeMigli
 	    <dependency>
   		<groupId>it.mycraft</groupId>
   		<artifactId>powerlib-<YOUR-PLATFORM></artifactId>
-  		<version>1.2.16-SNAPSHOT</version>
+  		<version>1.3.0-SNAPSHOT</version>
 		<scope>provided</scope>
 	    </dependency>
 	</dependencies>
@@ -48,6 +48,23 @@ risk, and don't do that unless you know what you're doing!
 
 - (Experimental) ALL: `all`
 
+### New modules in 1.3.0
+
+| Module                        | Purpose                                                                                | Min MC version |
+|-------------------------------|----------------------------------------------------------------------------------------|----------------|
+| `powerlib-minimessage`        | MiniMessage parsing helpers, plus MiniMessage-aware `Message` and `ItemBuilder`        | 1.16+          |
+| `powerlib-components`         | DataComponent fluent helpers (`food`, `tool`, `unbreakable`, ...). **Opt-in 1.20.5+**  | **1.20.5+**    |
+| `powerlib-commands-api`       | Multi-platform fluent command builder (interfaces + types)                              | 1.16+          |
+| `powerlib-commands-bukkit`    | Bukkit binding. Detects Paper-Brigadier at runtime and falls back to `CommandExecutor` | 1.16+          |
+| `powerlib-commands-bungee`    | BungeeCord binding                                                                      | —              |
+| `powerlib-commands-velocity`  | Velocity binding (native Brigadier via `SimpleCommand`)                                 | —              |
+
+Each new module is independent — import only what you need. They are deployed alongside the existing platform modules with the same `groupId` and `version`.
+
+### Nexo softdepend
+
+PowerLib 1.3.0 ships a Nexo bridge: drop the plugin into a server with `Nexo` installed and PowerLib will fire a `NexoFurnitureInteractEvent` when players interact with Nexo furniture, plus accept the `nexo:<id>` material prefix in `ItemBuilder.setMaterial(...)`. Nexo is a `softdepend`: PowerLib runs fine without it.
+
 If you're using Gradle, just put the repositories and dependencies below into your `build.gradle`. As said before,
 replace `<YOUR-PLATFORM>` with
 your platform between the ones expressed above.
@@ -61,7 +78,7 @@ repositories {
 }
 
 dependencies {
-    compileOnly 'it.mycraft:powerlib-<YOUR-PLATFORM>:1.2.16-SNAPSHOT'
+    compileOnly 'it.mycraft:powerlib-<YOUR-PLATFORM>:1.3.0-SNAPSHOT'
 }
 ```
 
@@ -82,7 +99,7 @@ your plugin and rename its packages:
 	    <dependency>
   		<groupId>it.mycraft</groupId>
   		<artifactId>powerlib-<YOUR-PLATFORM></artifactId>
-  		<version>1.2.16-SNAPSHOT</version>
+  		<version>1.3.0-SNAPSHOT</version>
 		<scope>compile</scope>
 	    </dependency>
 	</dependencies>
