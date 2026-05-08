@@ -19,5 +19,27 @@
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# JVM crash logs
 hs_err_pid*
+
+# Maven build output
+target/
+dependency-reduced-pom.xml
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# Anti-regression: nested wrapper artefacts seen in the GitLab fork
+.mvn/.mvn/
+.mvn/.mvn/.mvn/
+
+# OS
+.DS_Store
+Thumbs.db
