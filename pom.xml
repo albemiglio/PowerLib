@@ -28,6 +28,8 @@
         <module>components</module>
         <module>commands-api</module>
         <module>commands-bukkit</module>
+        <module>commands-bungee</module>
+        <module>commands-velocity</module>
         <module>tests</module>
     </modules>
 

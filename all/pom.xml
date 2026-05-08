@@ -135,6 +135,18 @@
         </dependency>
         <dependency>
             <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-bungee</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
+            <artifactId>powerlib-commands-velocity</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>it.mycraft</groupId>
             <artifactId>powerlib-common</artifactId>
             <version>${project.parent.version}</version>
             <scope>compile</scope>
