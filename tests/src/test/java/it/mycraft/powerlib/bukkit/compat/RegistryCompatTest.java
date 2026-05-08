@@ -54,4 +54,14 @@ class RegistryCompatTest {
         Enchantment second = RegistryCompat.enchantment("unbreaking");
         assertThat(first).isSameAs(second);
     }
+
+    @Test
+    void healthBoostResolvesToHealthBoostNotInstantHealth() {
+        PotionEffectType healthBoost = RegistryCompat.potionEffect("health_boost");
+        PotionEffectType instantHealth = RegistryCompat.potionEffect("instant_health");
+        assertThat(healthBoost).isNotNull();
+        assertThat(instantHealth).isNotNull();
+        assertThat(healthBoost).isNotSameAs(instantHealth);
+        assertThat(healthBoost.getKey().getKey()).isEqualToIgnoringCase("health_boost");
+    }
 }
