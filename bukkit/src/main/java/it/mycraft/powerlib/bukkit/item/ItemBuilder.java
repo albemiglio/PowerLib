@@ -6,6 +6,7 @@ import com.mojang.authlib.properties.Property;
 import de.tr7zw.changeme.nbtapi.NBTCompound;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import dev.lone.itemsadder.api.CustomStack;
+import it.mycraft.powerlib.bukkit.compat.RegistryCompat;
 import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
 import it.mycraft.powerlib.common.chat.Message;
@@ -457,7 +458,7 @@ public class ItemBuilder implements Cloneable {
             }
 
             if (glowing && enchantments.isEmpty()) {
-                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addEnchant(RegistryCompat.glowEnchant(), 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
