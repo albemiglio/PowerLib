@@ -19,6 +19,9 @@
 *.tar.gz
 *.rar
 
+# But the Maven Wrapper jar must be committed for ./mvnw to work post-clone
+!.mvn/wrapper/maven-wrapper.jar
+
 # JVM crash logs
 hs_err_pid*
 
