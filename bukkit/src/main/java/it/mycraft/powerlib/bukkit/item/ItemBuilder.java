@@ -6,6 +6,7 @@ import com.mojang.authlib.properties.Property;
 import de.tr7zw.changeme.nbtapi.NBTCompound;
 import de.tr7zw.changeme.nbtapi.NBTItem;
 import it.mycraft.powerlib.bukkit.compat.ItemsAdderBridge;
+import it.mycraft.powerlib.bukkit.compat.NexoSupport;
 import it.mycraft.powerlib.bukkit.compat.RegistryCompat;
 import it.mycraft.powerlib.bukkit.item.applier.PersistentDataApplier;
 import it.mycraft.powerlib.bukkit.item.applier.PersistentEntry;
@@ -42,6 +43,10 @@ public class ItemBuilder implements Cloneable {
 
     public static boolean isUsingItemsAdder() {
         return ItemsAdderBridge.isAvailable();
+    }
+
+    public static boolean isUsingNexo() {
+        return NexoSupport.isAvailable();
     }
     @Getter
     private String material;
@@ -93,7 +98,7 @@ public class ItemBuilder implements Cloneable {
      * @return The ItemBuilder
      */
     public ItemBuilder setMaterial(String material) {
-        if (material.length() > 11 && !material.startsWith("itemsadder:")) {
+        if (material.length() > 11 && !material.startsWith("itemsadder:") && !material.startsWith("nexo:")) {
             Optional<Material> optMaterial = Enums.getIfPresent(Material.class, material).toJavaUtil();
             if (optMaterial.isPresent())
                 this.material = optMaterial.get().toString();
@@ -437,6 +442,10 @@ public class ItemBuilder implements Cloneable {
             if (material.startsWith("itemsadder:")) {
                 String customItem = material.substring("itemsadder:".length());
                 Optional<ItemStack> built = ItemsAdderBridge.buildItem(customItem, amount);
+                itemStack = built.orElseGet(() -> new ItemStack(Material.BARRIER, amount, metadata));
+            } else if (material.startsWith("nexo:")) {
+                String customItem = material.substring("nexo:".length());
+                Optional<ItemStack> built = NexoSupport.buildItem(customItem, amount);
                 itemStack = built.orElseGet(() -> new ItemStack(Material.BARRIER, amount, metadata));
             } else {
                 Material m = Material.getMaterial(material);

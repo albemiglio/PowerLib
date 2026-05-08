@@ -38,9 +38,23 @@
             <id>matteodev</id>
             <url>https://maven.devs.beer/</url>
         </repository>
+        <repository>
+            <id>nexomc-repo</id>
+            <url>https://repo.nexomc.com/releases</url>
+        </repository>
+        <repository>
+            <id>alessiodp-repo</id>
+            <url>https://repo.alessiodp.com/releases/</url>
+        </repository>
     </repositories>
 
     <dependencies>
+        <dependency>
+            <groupId>com.nexomc</groupId>
+            <artifactId>nexo</artifactId>
+            <version>1.0.0</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>it.mycraft</groupId>
             <artifactId>powerlib-common</artifactId>
