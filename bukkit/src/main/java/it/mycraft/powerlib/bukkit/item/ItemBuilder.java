@@ -5,7 +5,7 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import de.tr7zw.changeme.nbtapi.NBTCompound;
 import de.tr7zw.changeme.nbtapi.NBTItem;
-import dev.lone.itemsadder.api.CustomStack;
+import it.mycraft.powerlib.bukkit.compat.ItemsAdderBridge;
 import it.mycraft.powerlib.bukkit.compat.RegistryCompat;
 import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
@@ -37,7 +37,9 @@ import java.util.stream.Collectors;
 
 public class ItemBuilder implements Cloneable {
 
-    public static boolean isUsingItemsAdder() { return Bukkit.getPluginManager().isPluginEnabled("ItemsAdder"); }
+    public static boolean isUsingItemsAdder() {
+        return ItemsAdderBridge.isAvailable();
+    }
     @Getter
     private String material;
     @Getter
@@ -303,11 +305,8 @@ public class ItemBuilder implements Cloneable {
             }
         }
 
-        NBTItem nbtItem = new NBTItem(itemStack);
-        NBTCompound comp = nbtItem.getCompound("itemsadder");
-        if(isUsingItemsAdder() && comp != null) {
-            itemsAdderData = new Pair<>(Optional.ofNullable(comp.getString("namespace")), Optional.ofNullable(comp.getString("id")));
-        }
+        ItemsAdderBridge.extractData(itemStack).ifPresent(pair ->
+                this.itemsAdderData = new Pair<>(Optional.of(pair.getLeft()), Optional.of(pair.getRight())));
         return this;
     }
 
@@ -422,14 +421,10 @@ public class ItemBuilder implements Cloneable {
 
         ItemStack itemStack;
         try {
-            if (material.startsWith("itemsadder:") && isUsingItemsAdder()) {
+            if (material.startsWith("itemsadder:")) {
                 String customItem = material.substring("itemsadder:".length());
-                if (CustomStack.isInRegistry(customItem)) {
-                    itemStack = CustomStack.getInstance(customItem).getItemStack();
-                } else {
-                    // fallback if custom stack missing
-                    itemStack = new ItemStack(Material.BARRIER, amount, metadata);
-                }
+                Optional<ItemStack> built = ItemsAdderBridge.buildItem(customItem, amount);
+                itemStack = built.orElseGet(() -> new ItemStack(Material.BARRIER, amount, metadata));
             } else {
                 Material m = Material.getMaterial(material);
                 if (m == null) {
@@ -483,12 +478,16 @@ public class ItemBuilder implements Cloneable {
             itemStack.setItemMeta(potionMeta);
         }
 
-        if(itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
-            NBTItem nbtItem = new NBTItem(itemStack);
-            NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
-            comp.setString("namespace", itemsAdderData.getLeft().get());
-            comp.setString("id", itemsAdderData.getRight().get());
-            nbtItem.applyNBT(itemStack);
+        if (itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
+            try {
+                NBTItem nbtItem = new NBTItem(itemStack);
+                NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
+                comp.setString("namespace", itemsAdderData.getLeft().get());
+                comp.setString("id", itemsAdderData.getRight().get());
+                nbtItem.applyNBT(itemStack);
+            } catch (Exception e) {
+                Bukkit.getLogger().warning("PowerLib: failed to apply ItemsAdder NBT: " + e.getMessage());
+            }
         }
         return itemStack;
     }
