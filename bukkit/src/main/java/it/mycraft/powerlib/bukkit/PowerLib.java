@@ -11,11 +11,24 @@ import org.bukkit.plugin.Plugin;
 public class PowerLib {
 
     private static BukkitAudiences adventure;
+    private static boolean injected;
 
     public static void inject(Plugin plugin) {
+        if (injected) return;
         adventure = BukkitAudiences.create(plugin);
-        new NexoListener(plugin);
+        if (NexoSupport.isAvailable()) {
+            new NexoListener(plugin);
+        }
         Bukkit.getPluginManager().registerEvents(new PagedInventoryListener(), plugin);
+        injected = true;
+    }
+
+    public static void disable() {
+        if (adventure != null) {
+            adventure.close();
+            adventure = null;
+        }
+        injected = false;
     }
 
     public static boolean isNexoAvailable() {

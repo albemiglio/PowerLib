@@ -444,7 +444,9 @@ public class ItemBuilder implements Cloneable {
         try {
             Color color = Color.fromRGB(red, green, blue);
             leatherArmorMeta.setColor(color);
-        } catch (Exception ignored) {
+        } catch (IllegalArgumentException e) {
+            Bukkit.getLogger().warning("PowerLib: invalid leather armor color (r=" + red
+                    + ", g=" + green + ", b=" + blue + "); each component must be 0-255. " + e.getMessage());
         }
         leatherArmor.setItemMeta(leatherArmorMeta);
         return leatherArmor;

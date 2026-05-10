@@ -41,6 +41,11 @@ public class PowerLibPlugin extends JavaPlugin implements Listener {
         new Metrics(this, 11161);
     }
 
+    @Override
+    public void onDisable() {
+        PowerLib.disable();
+    }
+
     public Configuration getConfiguration() {
         return this.bukkitConfigManager.get("config.yml");
     }

@@ -6,13 +6,16 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class PagedInventoryListener implements Listener {
 
-    private static final Map<UUID, OpenedPagedInventory> OPEN = new HashMap<>();
+    /** Bukkit guarantees an InventoryCloseEvent before PlayerQuitEvent on disconnect,
+     *  so this map self-cleans on close. ConcurrentHashMap because track() is public
+     *  and may be called from async code that opens a GUI. */
+    private static final Map<UUID, OpenedPagedInventory> OPEN = new ConcurrentHashMap<>();
 
     public static void track(Player player, OpenedPagedInventory state) {
         OPEN.put(player.getUniqueId(), state);
