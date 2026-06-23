@@ -24,6 +24,11 @@ public class ColorAPI {
         return s.replace("&", "§");
     }
 
+    /**
+     * @deprecated wraps section-sign codes as literal text, which Adventure does not render as colors.
+     * Use {@link it.mycraft.powerlib.common.chat.Message} (legacy/hex/MiniMessage aware) instead.
+     */
+    @Deprecated
     public static Component color(TextComponent c) {
         if(c == null || c.content().isEmpty()) return c;
         return Component.text(color(c.content()));
@@ -54,6 +59,10 @@ public class ColorAPI {
         return matcher.appendTail(buffer).toString();
     }
 
+    /**
+     * @deprecated wraps section-sign codes as literal text. Use {@link it.mycraft.powerlib.common.chat.Message} instead.
+     */
+    @Deprecated
     public static Component hex(TextComponent component, String pre, String post) {
         return Component.text(hex(component.content(), pre, post));
     }
@@ -69,6 +78,10 @@ public class ColorAPI {
         return hex(string, "&#", "");
     }
 
+    /**
+     * @deprecated wraps section-sign codes as literal text. Use {@link it.mycraft.powerlib.common.chat.Message} instead.
+     */
+    @Deprecated
     public static Component hex(TextComponent component) {
         return hex(component, "&#", "");
     }
@@ -99,6 +112,10 @@ public class ColorAPI {
                 STRIP_COLOR_PATTERN.matcher(s).replaceAll("");
     }
 
+    /**
+     * @deprecated operates on section-sign content only. Use {@link it.mycraft.powerlib.common.chat.Message#decolor()} instead.
+     */
+    @Deprecated
     public static Component decolor(TextComponent c) {
         if(c == null || c.content().isEmpty()) return c;
         return Component.text(decolor(c.content()));

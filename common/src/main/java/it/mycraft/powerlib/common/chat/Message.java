@@ -3,9 +3,10 @@ package it.mycraft.powerlib.common.chat;
 import it.mycraft.powerlib.common.utils.ColorAPI;
 import net.kyori.adventure.audience.Audience;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
 import net.kyori.adventure.text.event.ClickEvent;
 import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -18,10 +19,24 @@ import static net.kyori.adventure.text.Component.text;
 
 public class Message {
 
-
     private static final PlatformAudience platformAudience = Audiences.getPlatformAudience();
-    private TextComponent singleLineMessage;
-    private List<TextComponent> multiLineMessages;
+
+    /** Parses legacy ('&'/'§') and '&#RRGGBB' hex codes into real Adventure components. */
+    private static final LegacyComponentSerializer LEGACY =
+            LegacyComponentSerializer.builder().character('§').hexColors().build();
+    private static final MiniMessage MINI = MiniMessage.miniMessage();
+
+    /**
+     * Converts a legacy-formatted string ('&' codes and '&#RRGGBB' hex) into a real component,
+     * instead of leaving section-sign codes as literal text.
+     */
+    static Component toComponent(String legacy) {
+        if (legacy == null) return text("");
+        return LEGACY.deserialize(ColorAPI.color(ColorAPI.hex(legacy)));
+    }
+
+    private Component singleLineMessage;
+    private List<Component> multiLineMessages;
     private HoverEvent<?> hoverEvent;
     private ClickEvent clickEvent;
 
@@ -29,10 +44,10 @@ public class Message {
         this.singleLineMessage = text("");
         this.multiLineMessages = new ArrayList<>();
     }
-    public Message(String singleLineMessage, boolean color) {
-        this.singleLineMessage = text(color ? ColorAPI.color(singleLineMessage) : singleLineMessage);
-        this.multiLineMessages = new ArrayList<>();
 
+    public Message(String singleLineMessage, boolean color) {
+        this.singleLineMessage = color ? toComponent(singleLineMessage) : text(singleLineMessage);
+        this.multiLineMessages = new ArrayList<>();
     }
 
     public Message(String singleLineMessage) {
@@ -40,38 +55,66 @@ public class Message {
     }
 
     public Message(String... multiLineMessages) {
-        this.singleLineMessage = text("");
-        this.multiLineMessages = new ArrayList<>(ColorAPI.color(Arrays.asList(multiLineMessages))).stream().map(Component::text).collect(Collectors.toList());
+        this(Arrays.asList(multiLineMessages), true);
     }
 
     public Message(List<String> multiLineMessages, boolean color) {
         this.singleLineMessage = text("");
-        this.multiLineMessages = (color ? new ArrayList<>(ColorAPI.color(multiLineMessages)) : multiLineMessages).stream().map(Component::text).collect(Collectors.toList());
+        this.multiLineMessages = multiLineMessages.stream()
+                .map(s -> color ? toComponent(s) : text(s))
+                .collect(Collectors.toList());
     }
 
     public Message(List<String> multiLineMessages) {
         this(multiLineMessages, true);
     }
 
+    /**
+     * Builds a Message from MiniMessage markup, e.g. "&lt;gradient:#ff0000:#0000ff&gt;hi&lt;/gradient&gt;".
+     * @param miniMessage the MiniMessage string
+     * @return the message
+     */
+    public static Message mini(String miniMessage) {
+        Message m = new Message();
+        m.singleLineMessage = MINI.deserialize(miniMessage == null ? "" : miniMessage);
+        return m;
+    }
+
+    public static Message mini(String... lines) {
+        return mini(Arrays.asList(lines));
+    }
+
+    public static Message mini(List<String> lines) {
+        Message m = new Message();
+        m.multiLineMessages = lines.stream()
+                .map(s -> MINI.deserialize(s == null ? "" : s))
+                .collect(Collectors.toList());
+        return m;
+    }
+
     public Message addPlaceHolder(String placeholder, Object value) {
-        singleLineMessage = singleLineMessage.content(singleLineMessage.content().replace(placeholder, value.toString()));
-        multiLineMessages.replaceAll(s -> s.content(s.content().replace(placeholder, value.toString())));
+        String replacement = String.valueOf(value);
+        this.singleLineMessage = replace(this.singleLineMessage, placeholder, replacement);
+        this.multiLineMessages.replaceAll(c -> replace(c, placeholder, replacement));
         return this;
     }
 
+    private static Component replace(Component component, String placeholder, String value) {
+        return component.replaceText(builder -> builder.matchLiteral(placeholder).replacement(value));
+    }
+
     public Message set(String message) {
-        this.singleLineMessage = text(ColorAPI.color(message));
+        this.singleLineMessage = toComponent(message);
         return this;
     }
 
     public Message set(List<String> messages) {
-        this.multiLineMessages = ColorAPI.color(messages).stream().map(Component::text).collect(Collectors.toList());
+        this.multiLineMessages = messages.stream().map(Message::toComponent).collect(Collectors.toList());
         return this;
     }
 
     public Message set(String... messages) {
-        this.multiLineMessages = ColorAPI.color(Arrays.asList(messages)).stream().map(Component::text).collect(Collectors.toList());
-        return this;
+        return set(Arrays.asList(messages));
     }
 
     /**
@@ -100,7 +143,7 @@ public class Message {
      * @return the final message
      */
     public Message append(Component... components) {
-        for(Component c : components) {
+        for (Component c : components) {
             this.singleLineMessage = this.singleLineMessage.append(c);
         }
         return this;
@@ -108,7 +151,7 @@ public class Message {
 
     public Message append(Message... messages) {
         Arrays.stream(messages).map(m -> (Component[])
-                        (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray()))
+                        (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray(new Component[0])))
                 .forEach(this::append);
         return this;
     }
@@ -116,29 +159,33 @@ public class Message {
     /**
      * Appends multiple messages to a Message (converting it in a multi-line message)
      * @param lines an optional array of lines to append
-     * @return
+     * @return the final message
      */
     public Message appendLines(Component... lines) {
-        if(this.singleLineMessage != null) {
+        if (this.singleLineMessage != null) {
             this.multiLineMessages.add(this.singleLineMessage);
         }
-        this.multiLineMessages.addAll(Arrays.stream(lines).map(l -> (TextComponent) l).collect(Collectors.toList()));
+        this.multiLineMessages.addAll(Arrays.asList(lines));
         return this;
     }
 
     public Message appendLines(Message... messages) {
         Arrays.stream(messages).map(m -> (Component[])
-                        (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray()))
+                        (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray(new Component[0])))
                 .forEach(this::appendLines);
         return this;
     }
 
+    /**
+     * The message as a legacy section-sign string. Prefer {@link #getComponent()} for modern usage.
+     * @return the legacy-serialized text
+     */
     public String getText() {
-        return singleLineMessage.content();
+        return LEGACY.serialize(singleLineMessage);
     }
 
     public List<String> getTextList() {
-        return multiLineMessages.stream().map(TextComponent::content).collect(Collectors.toList());
+        return multiLineMessages.stream().map(LEGACY::serialize).collect(Collectors.toList());
     }
 
     public Component getComponent() {
@@ -154,10 +201,9 @@ public class Message {
      * @param audience the senders audience
      */
     public void send(Audience audience) {
-        if(multiLineMessages.isEmpty()) {
+        if (multiLineMessages.isEmpty()) {
             sendRawMessage(audience, singleLineMessage);
-        }
-        else {
+        } else {
             this.multiLineMessages.forEach((msg) -> sendRawMessage(audience, msg));
         }
     }
@@ -170,8 +216,7 @@ public class Message {
         Audience audience;
         try {
             audience = (Audience) platformAudience.getPlayerAudience().invoke(null, commandSender);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
@@ -186,8 +231,7 @@ public class Message {
         Audience audience;
         try {
             audience = (Audience) platformAudience.getPermissionAudience().invoke(null, permission);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
@@ -202,8 +246,7 @@ public class Message {
         Audience audience;
         try {
             audience = (Audience) platformAudience.getFilterAudience().invoke(null, filter);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
@@ -217,8 +260,7 @@ public class Message {
         Audience console;
         try {
             console = (Audience) platformAudience.getConsoleAudience().invoke(null);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
@@ -232,8 +274,7 @@ public class Message {
         Audience audience;
         try {
             audience = (Audience) platformAudience.getAllPlayersAudience().invoke(null);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
@@ -247,46 +288,56 @@ public class Message {
         Audience audience;
         try {
             audience = (Audience) platformAudience.getAllAudience().invoke(null);
-        }
-        catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (IllegalAccessException | InvocationTargetException e) {
             platformAudience.sendError();
             return;
         }
         send(audience);
     }
 
-    public Message color() { // no need by default
-        if (multiLineMessages.isEmpty()) {
-            this.singleLineMessage = (TextComponent) ColorAPI.color(singleLineMessage);
-        } else this.multiLineMessages = ColorAPI.color(getTextList()).stream().map(Component::text).collect(Collectors.toList());
+    /**
+     * @deprecated colors are now applied automatically when the message is created; this is a no-op.
+     */
+    @Deprecated
+    public Message color() {
         return this;
     }
 
-    public Message decolor() {
-        if (multiLineMessages.isEmpty()) {
-            this.singleLineMessage = (TextComponent) ColorAPI.decolor(singleLineMessage);
-        } else this.multiLineMessages = ColorAPI.decolor(getTextList()).stream().map(Component::text).collect(Collectors.toList());
-        return this;
-    }
-
+    /**
+     * @deprecated hex colors are now applied automatically when the message is created; this is a no-op.
+     */
+    @Deprecated
     public Message hex(String pre, String post) {
-        if (multiLineMessages.isEmpty()) {
-            this.singleLineMessage = (TextComponent) ColorAPI.hex(singleLineMessage, pre, post);
-        } else this.multiLineMessages = ColorAPI.hex(getTextList(), pre, post)
-                .stream().map(Component::text).collect(Collectors.toList());
         return this;
     }
 
+    /**
+     * @deprecated hex colors are now applied automatically when the message is created; this is a no-op.
+     */
+    @Deprecated
     public Message hex() {
-        this.hex("&#", "");
         return this;
+    }
+
+    /**
+     * Removes all styling, keeping only the plain text of the message.
+     * @return the message
+     */
+    public Message decolor() {
+        this.singleLineMessage = strip(this.singleLineMessage);
+        this.multiLineMessages.replaceAll(Message::strip);
+        return this;
+    }
+
+    private static Component strip(Component component) {
+        return text(LEGACY.serialize(component).replaceAll("(?i)§[0-9A-FK-ORX]", ""));
     }
 
     private void sendRawMessage(Audience audience, Component component) {
-        if(this.hoverEvent != null) {
+        if (this.hoverEvent != null) {
             component = component.hoverEvent(this.hoverEvent);
         }
-        if(this.clickEvent != null) {
+        if (this.clickEvent != null) {
             component = component.clickEvent(this.clickEvent);
         }
         audience.sendMessage(component);
@@ -294,6 +345,6 @@ public class Message {
 
     private void reset() {
         multiLineMessages = new ArrayList<>();
-        singleLineMessage = null;
+        singleLineMessage = text("");
     }
 }
