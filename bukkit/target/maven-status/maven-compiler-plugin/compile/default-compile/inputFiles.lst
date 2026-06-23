@@ -1,0 +1,11 @@
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/PowerLib.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/adapters/AudienceAdapter.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/adapters/BukkitAudienceProvider.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/config/BukkitConfigManager.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/config/ConfigurationAdapter.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/inventory/InventoryBuilder.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/item/ItemBuilder.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/item/ItemUtils.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/item/LegacyItemAPI.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/reflection/ReflectionAPI.java
+/Users/albertomigliorato/PowerLib/bukkit/src/main/java/it/mycraft/powerlib/bukkit/updater/PluginUpdater.java

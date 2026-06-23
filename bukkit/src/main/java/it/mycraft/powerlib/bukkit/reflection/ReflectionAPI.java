@@ -134,7 +134,7 @@ public class ReflectionAPI {
             sendPacket(player, titlePacket);
             sendPacket(player, subTitlePacket);
         } catch (Exception e) {
-            e.printStackTrace();
+            new Message("Error while sending a title!", e.getMessage()).sendConsole();
         }
     }
 
@@ -151,7 +151,7 @@ public class ReflectionAPI {
             playerConnection.getClass().getMethod("sendPacket", new Class[]{ReflectionAPI.getNMSClass("Packet")})
                     .invoke(playerConnection, packet);
         } catch (Exception e) {
-            e.printStackTrace();
+            new Message("Error while sending a packet!", e.getMessage()).sendConsole();
         }
     }
 }

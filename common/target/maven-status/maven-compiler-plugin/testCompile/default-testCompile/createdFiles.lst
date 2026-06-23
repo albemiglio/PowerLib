@@ -1,0 +1,5 @@
+it/mycraft/powerlib/common/configuration/ConfigurationTest.class
+it/mycraft/powerlib/common/chance/RandomDrawTest.class
+it/mycraft/powerlib/common/chat/MessageTest.class
+it/mycraft/powerlib/common/configuration/ConfigMigrationTest.class
+it/mycraft/powerlib/common/configuration/ConfigManagerTest.class

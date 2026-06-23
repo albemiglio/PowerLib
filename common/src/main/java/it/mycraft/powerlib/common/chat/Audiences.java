@@ -1,29 +1,25 @@
 package it.mycraft.powerlib.common.chat;
 
-import it.mycraft.powerlib.common.utils.ServerAPI;
-import lombok.Getter;
+import java.util.ServiceLoader;
 
-public class Audiences {
+/**
+ * Resolves the platform's {@link AudienceProvider} via {@link ServiceLoader}. The implementation is
+ * contributed by the platform module (bukkit/bungee/velocity) through {@code META-INF/services}.
+ */
+public final class Audiences {
 
-    @Getter
-    private static PlatformAudience platformAudience = null;
+    private static final AudienceProvider PROVIDER =
+            ServiceLoader.load(AudienceProvider.class, Audiences.class.getClassLoader())
+                    .findFirst()
+                    .orElse(null);
 
-    static {
-        switch (ServerAPI.getType()) {
-            case BUKKIT:
-                platformAudience = new BukkitAudience();
-                break;
-            case BUNGEECORD:
-                platformAudience = new BungeeAudience();
-                break;
-            case VELOCITY:
-                platformAudience = new VelocityAudience();
-                break;
-            default:
-            case OTHER:
-                System.out.println("SEVERE ERROR! PowerLib is unable to find a server platform! Please contact an " +
-                        "administrator ASAP!");
-                break;
-        }
+    private Audiences() {
+    }
+
+    /**
+     * @return the platform audience provider, or null if none is registered (no platform on the classpath)
+     */
+    public static AudienceProvider getProvider() {
+        return PROVIDER;
     }
 }

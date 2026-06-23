@@ -1,0 +1,5 @@
+it/mycraft/powerlib/velocity/updater/PluginUpdater.class
+it/mycraft/powerlib/velocity/adapters/VelocityAudienceProvider.class
+it/mycraft/powerlib/velocity/config/VelocityConfigManager.class
+it/mycraft/powerlib/velocity/PowerLib.class
+it/mycraft/powerlib/velocity/adapters/AudienceAdapter.class

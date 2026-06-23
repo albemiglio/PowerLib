@@ -8,7 +8,6 @@ import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,7 +18,7 @@ import static net.kyori.adventure.text.Component.text;
 
 public class Message {
 
-    private static final PlatformAudience platformAudience = Audiences.getPlatformAudience();
+    private static final AudienceProvider PROVIDER = Audiences.getProvider();
 
     /** Parses legacy ('&'/'§') and '&#RRGGBB' hex codes into real Adventure components. */
     private static final LegacyComponentSerializer LEGACY =
@@ -213,14 +212,9 @@ public class Message {
      * @param commandSender might be console, a Player, or a generic CommandSender
      */
     public void send(Object commandSender) {
-        Audience audience;
-        try {
-            audience = (Audience) platformAudience.getPlayerAudience().invoke(null, commandSender);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.player(commandSender));
         }
-        send(audience);
     }
 
     /**
@@ -228,14 +222,9 @@ public class Message {
      * @param permission the required node
      */
     public void broadcast(String permission) {
-        Audience audience;
-        try {
-            audience = (Audience) platformAudience.getPermissionAudience().invoke(null, permission);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.permission(permission));
         }
-        send(audience);
     }
 
     /**
@@ -243,56 +232,36 @@ public class Message {
      * @param filter the filter
      */
     public void send(Predicate<Object> filter) {
-        Audience audience;
-        try {
-            audience = (Audience) platformAudience.getFilterAudience().invoke(null, filter);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.filter(filter));
         }
-        send(audience);
     }
 
     /**
      * Sends the message to the server Console
      */
     public void sendConsole() {
-        Audience console;
-        try {
-            console = (Audience) platformAudience.getConsoleAudience().invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.console());
         }
-        send(console);
     }
 
     /**
      * Broadcast to all players! Console is NOT included in this audience
      */
     public void broadcast() {
-        Audience audience;
-        try {
-            audience = (Audience) platformAudience.getAllPlayersAudience().invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.players());
         }
-        send(audience);
     }
 
     /**
      * Broadcast to everyone. Players and console, everything included.
      */
     public void sendAll() {
-        Audience audience;
-        try {
-            audience = (Audience) platformAudience.getAllAudience().invoke(null);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            platformAudience.sendError();
-            return;
+        if (PROVIDER != null) {
+            send(PROVIDER.all());
         }
-        send(audience);
     }
 
     /**
