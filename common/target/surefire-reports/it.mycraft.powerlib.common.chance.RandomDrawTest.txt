@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: it.mycraft.powerlib.common.chance.RandomDrawTest
--------------------------------------------------------------------------------
-Tests run: 3, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.003 s -- in it.mycraft.powerlib.common.chance.RandomDrawTest
