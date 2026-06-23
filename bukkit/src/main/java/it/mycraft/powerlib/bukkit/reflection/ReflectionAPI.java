@@ -12,16 +12,34 @@ import java.util.logging.Level;
 public class ReflectionAPI {
 
     /**
-     * Returns The package-name of the NMS version
+     * The legacy CraftBukkit package version segment (e.g. "v1_16_R3"), or null on
+     * 1.17+/1.20.5+ where the server package is no longer relocated/versioned.
      */
     @Getter
-    private static final String version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+    private static final String version = resolveLegacyPackageVersion();
 
     /**
-     * Returns The server's numerical version
+     * The server's numerical (minor) Minecraft version, e.g. 21 for 1.21.x.
      */
     @Getter
-    private static final int numericalVersion = Integer.parseInt(version.split("_")[1]);
+    private static final int numericalVersion = resolveNumericalVersion();
+
+    private static String resolveLegacyPackageVersion() {
+        String[] parts = Bukkit.getServer().getClass().getPackage().getName().split("\\.");
+        if (parts.length >= 4 && parts[3].startsWith("v")) {
+            return parts[3];
+        }
+        return null;
+    }
+
+    private static int resolveNumericalVersion() {
+        try {
+            String[] parts = Bukkit.getBukkitVersion().split("-")[0].split("\\.");
+            return parts.length >= 2 ? Integer.parseInt(parts[1]) : 0;
+        } catch (Exception e) {
+            return 0;
+        }
+    }
 
     /**
      * @param name The path of a 'net.minecraft.server.v1_X_RX.' class
@@ -29,7 +47,10 @@ public class ReflectionAPI {
      */
     public static Class<?> getNMSClass(String name) {
         try {
-            return Class.forName("net.minecraft.server." + version + "." + name);
+            String path = (version != null)
+                    ? "net.minecraft.server." + version + "." + name
+                    : "net.minecraft." + name;
+            return Class.forName(path);
         } catch (ClassNotFoundException ex) {
             new Message("Error while finding a " + name + " NMS Class!", ex.getMessage()).sendConsole();
             return null;
@@ -55,7 +76,10 @@ public class ReflectionAPI {
      */
     public static Class<?> getOBCClass(String name) {
         try {
-            return Class.forName("org.bukkit.craftbukkit." + version + "." + name);
+            String base = (version != null)
+                    ? "org.bukkit.craftbukkit." + version + "."
+                    : "org.bukkit.craftbukkit.";
+            return Class.forName(base + name);
         } catch (ClassNotFoundException ex) {
             new Message("Error while finding a " + name + " OBC Class!", ex.getMessage()).sendConsole();
             return null;

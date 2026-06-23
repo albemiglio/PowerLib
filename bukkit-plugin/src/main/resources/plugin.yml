@@ -2,3 +2,4 @@ name: PowerLib
 authors: [AlbeMiglio, FranFrau]
 main: it.mycraft.powerlib.bukkit.PowerLibPlugin
 version: 1.2.16-SNAPSHOT
+api-version: '1.21'
