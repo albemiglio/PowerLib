@@ -1,6 +1,7 @@
 package it.mycraft.powerlib.common.chance;
 
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomDraw {
     private HashMap<Object, Integer> intMap;
@@ -96,47 +97,27 @@ public class RandomDraw {
     }
 
     /**
-     * Adds the Map items to a List, shuffles it and extracts randomly an item
+     * Draws a random item with a probability proportional to its weight.
+     * Uses a cumulative-weight scan (no list materialization, exact distribution).
      *
      * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
-     * @return The random-extracted item
+     * @return The random-extracted item, or null if there is nothing to draw
      */
     public Object shuffle(boolean useDoubleValues) {
-        List<Object> list = new ArrayList<>();
-        if (useDoubleValues) {
-            int multiplier = 1;
-            for (double d : this.doubleMap.values()) {
-                if (getDoubleDecimals(d) > multiplier) {
-                    multiplier = getDoubleDecimals(d);
-                }
-            }
-            for (Object obj : this.doubleMap.keySet()) {
-                for (int i = 1; i <= this.doubleMap.get(obj) * (Math.pow(10, multiplier * 1.0) * 1.0); i++) {
-                    list.add(obj);
-                }
-            }
-        } else {
-            for (Object obj : this.intMap.keySet()) {
-                for (int i = 1; i <= this.intMap.get(obj); i++) {
-                    list.add(obj);
-                }
+        Map<Object, ? extends Number> map = useDoubleValues ? this.doubleMap : this.intMap;
+        double total = this.getTotalChance(useDoubleValues);
+        if (map.isEmpty() || total <= 0) {
+            return null;
+        }
+        double target = ThreadLocalRandom.current().nextDouble(total);
+        double cumulative = 0;
+        for (Map.Entry<Object, ? extends Number> entry : map.entrySet()) {
+            cumulative += entry.getValue().doubleValue();
+            if (target < cumulative) {
+                return entry.getKey();
             }
         }
-        int totalChance = this.getTotalChance(useDoubleValues).intValue();
-        int rand = random(1, totalChance);
-        Collections.shuffle(list);
-        return list.get(rand - 1);
-    }
-
-    private int getDoubleDecimals(double d) {
-        String text = Double.toString(Math.abs(d));
-        int integerPlaces = text.indexOf('.');
-        return text.length() - integerPlaces - 1;
-    }
-
-    private int random(int min, int max) {
-        Random r = new Random();
-        return r.nextInt(max + 1 - min) + min;
+        return null;
     }
 
     private boolean contains(Object obj, boolean useDoubleValues) {
