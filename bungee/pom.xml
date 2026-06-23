@@ -20,7 +20,7 @@
     <repositories>
         <repository>
             <id>bungeecord-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <url>https://central.sonatype.com/repository/maven-snapshots/</url>
         </repository>
     </repositories>
 
@@ -34,7 +34,7 @@
         <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
-            <version>1.20-R0.2-SNAPSHOT</version>
+            <version>1.21-R0.3-SNAPSHOT</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>
