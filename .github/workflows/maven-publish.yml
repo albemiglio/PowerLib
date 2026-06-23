@@ -1,6 +1,7 @@
-# Builds PowerLib with Maven on every push/PR and deploys to CodeMC on release.
+# Build/test sanity check on every push & PR. Publishing to CodeMC is handled
+# by the CodeMC Jenkins job (ci.codemc.io/job/AlbeMiglio/job/PowerLib), not here.
 
-name: Maven Package
+name: Build
 
 on:
   workflow_dispatch:
@@ -11,16 +12,11 @@ on:
   pull_request:
     branches:
     - master
-  release:
-    types: [created]
 
 jobs:
   build:
 
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
     - uses: actions/checkout@v4
@@ -30,13 +26,9 @@ jobs:
         java-version: '21'
         distribution: 'temurin'
         cache: maven
-        # Must match the distributionManagement repository id in pom.xml.
-        server-id: codemc-releases
-        server-username: CODEMC_USERNAME
-        server-password: CODEMC_PASSWORD
 
     - name: Build with Maven
-      run: mvn -B -DskipTests package --file pom.xml
+      run: mvn -B package --file pom.xml
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
@@ -45,10 +37,3 @@ jobs:
         path: '*/target/*.jar'
         if-no-files-found: warn
         retention-days: 5
-
-    - name: Publish to CodeMC
-      if: github.event_name == 'release'
-      run: mvn -B -DskipTests deploy
-      env:
-        CODEMC_USERNAME: ${{ secrets.CODEMC_USERNAME }}
-        CODEMC_PASSWORD: ${{ secrets.CODEMC_PASSWORD }}
