@@ -149,7 +149,6 @@ public class InventoryBuilder {
 
         setItems(inventory);
 
-        reset();
         return inventory;
     }
 
@@ -287,20 +286,8 @@ public class InventoryBuilder {
      * @return The InventoryBuilder
      */
     public InventoryBuilder addPlaceHolder(String placeholder, Object value) {
-        title = title.replaceAll(placeholder, value.toString());
+        title = title.replace(placeholder, String.valueOf(value));
 
         return this;
-    }
-
-    /**
-     * Just puts in the InventoryBuilder object its default values
-     */
-    private void reset() {
-        setItem = null;
-        fillChessBorder = null;
-        int size = 9;
-        String title = null;
-        fillInventory = null;
-        fillBorder = null;
     }
 }
