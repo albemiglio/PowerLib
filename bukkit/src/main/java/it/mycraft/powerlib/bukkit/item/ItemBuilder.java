@@ -457,7 +457,7 @@ public class ItemBuilder implements Cloneable {
             }
 
             if (glowing && enchantments.isEmpty()) {
-                itemMeta.addEnchant(Enchantment.DURABILITY, 1, true);
+                itemMeta.addEnchant(Enchantment.UNBREAKING, 1, true);
                 itemMeta.addItemFlags(ItemFlag.HIDE_ENCHANTS);
             }
 
