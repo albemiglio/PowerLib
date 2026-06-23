@@ -6,6 +6,7 @@ import org.junit.jupiter.api.io.TempDir;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
@@ -32,6 +33,25 @@ class ConfigManagerTest {
         assertTrue(new File(dataFolder, "config.yml").exists(),
                 "the default must be copied from the jar into the data folder");
         assertSame(cfg, cm.get("config.yml"), "get() must return the cached config");
+    }
+
+    @Test
+    void createBackfillsMissingKeysFromJarDefault(@TempDir Path tmp) throws Exception {
+        File dataFolder = new File(tmp.toFile(), "data");
+        File jar = new File(tmp.toFile(), "plugin.jar");
+        writeJar(jar, "config.yml", "name: Default\nversion: 2\n");
+        dataFolder.mkdirs();
+        Files.write(new File(dataFolder, "config.yml").toPath(), "name: Custom\n".getBytes());
+
+        ConfigManager cm = new ConfigManager(dataFolder, jar);
+        Configuration cfg = cm.create("config.yml");
+
+        assertEquals("Custom", cfg.getString("name"), "existing user value must be preserved on update");
+        assertEquals(2, cfg.getInt("version"), "a key added in the new default must be backfilled");
+
+        Configuration reread = ConfigurationProvider.getProvider(YamlConfiguration.class)
+                .load(new File(dataFolder, "config.yml"));
+        assertEquals(2, reread.getInt("version"), "the backfilled key must be persisted to disk");
     }
 
     private static void writeJar(File jar, String entry, String content) throws IOException {

@@ -62,6 +62,7 @@ public class ConfigManager {
             createYAML(file, source, false);
         }
         reload(file);
+        backfillFromDefault(file, source);
         return this.configs.get(file);
     }
 
@@ -126,6 +127,31 @@ public class ConfigManager {
 
     private void put(String file, Configuration config) {
         this.configs.put(file, config);
+    }
+
+    /**
+     * Adds any key present in the packaged default but missing from the user's file (e.g. after an
+     * update that introduced new options), then persists the change. Existing values are untouched.
+     */
+    private void backfillFromDefault(String file, String source) {
+        Configuration current = this.configs.get(file);
+        if (current == null) {
+            return;
+        }
+        Configuration defaults = loadDefault(source);
+        if (defaults != null && ConfigMigration.backfill(current, defaults)) {
+            save(file);
+        }
+    }
+
+    private Configuration loadDefault(String source) {
+        try (InputStream in = getResourceAsStream(source)) {
+            return (in == null) ? null
+                    : ConfigurationProvider.getProvider(YamlConfiguration.class).load(in);
+        } catch (IOException ex) {
+            logError("reading defaults for", ex);
+            return null;
+        }
     }
 
     private void createYAML(String resourcePath, String source, boolean replace) {
