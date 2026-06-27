@@ -10,6 +10,7 @@ import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
 import it.mycraft.powerlib.common.chat.Message;
 import it.mycraft.powerlib.common.configuration.Configuration;
+import it.mycraft.powerlib.bukkit.utils.NexoUtils;
 import it.mycraft.powerlib.common.objects.Pair;
 import it.mycraft.powerlib.common.utils.ColorAPI;
 import lombok.Getter;
@@ -34,8 +35,17 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
+/**
+ * Fluent builder for {@link ItemStack}s, supporting names, lore, enchantments, potion effects, skulls,
+ * colored leather armor, placeholders, persistent data, and ItemsAdder/Nexo custom items.
+ */
 public class ItemBuilder implements Cloneable {
 
+    /**
+     * Whether the ItemsAdder plugin is currently enabled on the server.
+     *
+     * @return true if ItemsAdder is enabled
+     */
     public static boolean isUsingItemsAdder() { return Bukkit.getPluginManager().isPluginEnabled("ItemsAdder"); }
     @Getter
     private String material;
@@ -59,7 +69,11 @@ public class ItemBuilder implements Cloneable {
     private HashMap<String, Object> placeholders;
     private SkullMeta skullMeta;
     private Pair<Optional<String>, Optional<String>> itemsAdderData;
+    private final Map<NamespacedKey, Pair<PersistentDataType, Object>> persistentData = new HashMap<>();
 
+    /**
+     * Creates an item builder with default values (a single STONE with empty name and lore).
+     */
     public ItemBuilder() {
         lore = new ArrayList<>();
         enchantments = new HashMap<>();
@@ -253,8 +267,29 @@ public class ItemBuilder implements Cloneable {
         return this;
     }
 
+    /**
+     * Sets the item's custom model data
+     *
+     * @param customModelData The custom model data value
+     * @return The ItemBuilder
+     */
     public ItemBuilder setCustomModelData(int customModelData) {
         this.customModelData = customModelData;
+        return this;
+    }
+
+    /**
+     * Stores a value in the item's {@link org.bukkit.persistence.PersistentDataContainer}, written on {@link #build()}.
+     *
+     * @param <T>   the primitive type stored in the container
+     * @param <Z>   the complex type exposed to callers
+     * @param key   the namespaced key to store under
+     * @param type  the persistent data type
+     * @param value the value to store
+     * @return The ItemBuilder
+     */
+    public <T, Z> ItemBuilder setPersistentData(NamespacedKey key, PersistentDataType<T, Z> type, Z value) {
+        persistentData.put(key, new Pair<>(type, value));
         return this;
     }
 
@@ -429,6 +464,15 @@ public class ItemBuilder implements Cloneable {
                     // fallback if custom stack missing
                     itemStack = new ItemStack(Material.BARRIER, amount, metadata);
                 }
+            } else if (material.startsWith("nexo:")) {
+                ItemStack nexoItem = NexoUtils.itemStackFromId(material.substring("nexo:".length()));
+                if (nexoItem != null) {
+                    itemStack = nexoItem;
+                    itemStack.setAmount(amount);
+                } else {
+                    // fallback if the Nexo item is missing / Nexo unavailable
+                    itemStack = new ItemStack(Material.BARRIER, amount, metadata);
+                }
             } else {
                 Material m = Material.getMaterial(material);
                 if (m == null) {
@@ -469,6 +513,10 @@ public class ItemBuilder implements Cloneable {
 
             if (customModelData != 0) {
                 itemMeta.setCustomModelData(customModelData);
+            }
+
+            for (Map.Entry<NamespacedKey, Pair<PersistentDataType, Object>> entry : persistentData.entrySet()) {
+                itemMeta.getPersistentDataContainer().set(entry.getKey(), entry.getValue().getLeft(), entry.getValue().getRight());
             }
 
             itemStack.setItemMeta(itemMeta);
@@ -531,7 +579,7 @@ public class ItemBuilder implements Cloneable {
     /**
      * Uses the player's uuid to make a player skull
      *
-     * @param uuid
+     * @param uuid The player's uuid
      * @return The ItemStack
      */
     public ItemBuilder setPlayerHead(UUID uuid) {
@@ -625,6 +673,11 @@ public class ItemBuilder implements Cloneable {
                 .setGlowing(itemGlowing);
     }
 
+    /**
+     * Translates hex color codes in the item's name and lore
+     *
+     * @return The ItemBuilder
+     */
     public ItemBuilder hex() {
         setName(ColorAPI.hex(getName()));
         setLore(ColorAPI.hex(getLore()));
