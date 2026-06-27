@@ -6,6 +6,9 @@ import org.bukkit.command.CommandSender;
 
 import java.util.function.Predicate;
 
+/**
+ * Bukkit implementation of {@link AudienceProvider}, delegating to {@link AudienceAdapter}.
+ */
 public class BukkitAudienceProvider implements AudienceProvider {
 
     @Override

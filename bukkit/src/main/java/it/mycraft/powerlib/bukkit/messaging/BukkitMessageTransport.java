@@ -20,10 +20,14 @@ import java.util.function.BiConsumer;
  */
 public class BukkitMessageTransport implements MessageTransport, PluginMessageListener {
 
+    /** The shared plugin-messaging channel name ({@code powerlib:main}). */
     public static final String MC_CHANNEL = "powerlib:main";
 
     private volatile BiConsumer<String, byte[]> handler;
 
+    /**
+     * Registers the {@code powerlib:main} channel for incoming and outgoing plugin messages.
+     */
     public BukkitMessageTransport() {
         Plugin plugin = PowerLib.getPlugin();
         Messenger messenger = Bukkit.getMessenger();

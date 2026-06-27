@@ -9,6 +9,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Utility for translating color codes in strings: legacy {@code &} codes to section signs and {@code &#RRGGBB} hex codes.
+ */
 public class ColorAPI {
 
     private static final Pattern STRIP_COLOR_PATTERN = Pattern.compile("(?i)" + '§' + "[0-9A-FK-OR]");
@@ -27,6 +30,8 @@ public class ColorAPI {
     /**
      * @deprecated wraps section-sign codes as literal text, which Adventure does not render as colors.
      * Use {@link it.mycraft.powerlib.common.chat.Message} (legacy/hex/MiniMessage aware) instead.
+     * @param c the component to color
+     * @return the colored component
      */
     @Deprecated
     public static Component color(TextComponent c) {
@@ -40,6 +45,8 @@ public class ColorAPI {
      *
      * @author  Elementeral
      * @param string The string to color
+     * @param pre    The prefix delimiting a hex code
+     * @param post   The suffix delimiting a hex code
      * @return  The colored string
      */
     public static String hex(@Nullable String string, String pre, String post) {
@@ -61,6 +68,10 @@ public class ColorAPI {
 
     /**
      * @deprecated wraps section-sign codes as literal text. Use {@link it.mycraft.powerlib.common.chat.Message} instead.
+     * @param component the component to color
+     * @param pre       the prefix delimiting a hex code
+     * @param post      the suffix delimiting a hex code
+     * @return the colored component
      */
     @Deprecated
     public static Component hex(TextComponent component, String pre, String post) {
@@ -69,7 +80,7 @@ public class ColorAPI {
 
     /**
      * Colors a String with RGB Hex colors and default hex syntax
-     * Usage: &# + hex code
+     * Usage: {@code &#} + hex code
      *
      * @param string The string to color
      * @return  The colored string
@@ -80,6 +91,8 @@ public class ColorAPI {
 
     /**
      * @deprecated wraps section-sign codes as literal text. Use {@link it.mycraft.powerlib.common.chat.Message} instead.
+     * @param component the component to color
+     * @return the colored component
      */
     @Deprecated
     public static Component hex(TextComponent component) {
@@ -89,7 +102,9 @@ public class ColorAPI {
     /**
      * Colors a StringList with RGB Hex colors (1.16+ clients and servers only)
      *
-     * @param l The list to color
+     * @param l    The list to color
+     * @param pre  The prefix delimiting a hex code
+     * @param post The suffix delimiting a hex code
      * @return  The colored stringlist
      */
     public static List<String> hex(List<String> l, String pre, String post) {
@@ -97,6 +112,12 @@ public class ColorAPI {
         return l.stream().map(line -> hex(line, pre, post)).collect(Collectors.toList());
     }
 
+    /**
+     * Colors a string list with RGB hex colors using the default {@code &#} syntax.
+     *
+     * @param l The list to color
+     * @return The colored string list
+     */
     public static List<String> hex(List<String> l) {
         return hex(l, "&#", "");
     }
@@ -114,6 +135,8 @@ public class ColorAPI {
 
     /**
      * @deprecated operates on section-sign content only. Use {@link it.mycraft.powerlib.common.chat.Message#decolor()} instead.
+     * @param c the component to decolor
+     * @return the unformatted component
      */
     @Deprecated
     public static Component decolor(TextComponent c) {
@@ -122,7 +145,7 @@ public class ColorAPI {
     }
 
     /**
-     * Colors a List<String>
+     * Colors a {@code List<String>}
      *
      * @param list The list of strings to color
      * @return The colored list
@@ -133,7 +156,7 @@ public class ColorAPI {
     }
 
     /**
-     * Decolors a List<String>
+     * Decolors a {@code List<String>}
      *
      * @param list The list of strings to decolor
      * @return The unformatted list

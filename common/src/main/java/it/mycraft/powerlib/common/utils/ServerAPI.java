@@ -2,6 +2,10 @@ package it.mycraft.powerlib.common.utils;
 
 import lombok.Getter;
 
+/**
+ * Detects the running server platform by probing for platform-specific classes. The detected
+ * {@link ServerType} is resolved once at class-load time and exposed via {@code getType()}.
+ */
 public class ServerAPI {
 
     @Getter
@@ -24,6 +28,7 @@ public class ServerAPI {
         else type = ServerType.OTHER;
     }
 
+    /** @return {@code true} if the Bukkit API is present on the classpath */
     public static boolean isUsingBukkit() {
         try {
             Class.forName("org.bukkit.Bukkit");
@@ -33,6 +38,7 @@ public class ServerAPI {
         }
     }
 
+    /** @return {@code true} if the BungeeCord API is present (may also be true on Velocity via compatibility shims) */
     public static boolean isUsingBungee() { // might throw wrong server types e.g. when using Snap inside Velocity
         try {
             Class.forName("net.md_5.bungee.api.ProxyServer");
@@ -42,6 +48,7 @@ public class ServerAPI {
         }
     }
 
+    /** @return {@code true} only on a real BungeeCord proxy (the {@code BungeeCord} implementation class) */
     public static boolean isStrictlyUsingBungee() {
         try {
             Class.forName("net.md_5.bungee.BungeeCord");
@@ -51,6 +58,7 @@ public class ServerAPI {
         }
     }
 
+    /** @return {@code true} if the Velocity API is present on the classpath */
     public static boolean isUsingVelocity() {
         try {
             Class.forName("com.velocitypowered.api.proxy.ProxyServer");
@@ -60,6 +68,7 @@ public class ServerAPI {
         }
     }
 
+    /** @return {@code true} only on a real Velocity proxy (the {@code Velocity} implementation class) */
     public static boolean isStrictlyUsingVelocity() {
         try {
             Class.forName("com.velocitypowered.proxy.Velocity");

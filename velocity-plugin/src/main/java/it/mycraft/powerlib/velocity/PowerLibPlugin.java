@@ -23,6 +23,12 @@ import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
+/**
+ * PowerLib Official Source code
+ *
+ * @author AlbeMiglio, FranFrau
+ * https://www.github.com/AlbeMiglio/PowerLib
+ */
 @Getter
 @Plugin(id = "powerlib", name = "PowerLib", version = "1.2.16-SNAPSHOT", authors = {"AlbeMiglio", "FranFrau"})
 public class PowerLibPlugin {
@@ -39,6 +45,15 @@ public class PowerLibPlugin {
     private boolean checkForUpdates;
     private ConfigManager velocityConfigManager;
 
+    /**
+     * Injected by Velocity at construction time to wire up the proxy services.
+     *
+     * @param proxy          the proxy server
+     * @param description    the plugin description
+     * @param logger         the plugin logger
+     * @param metricsFactory the bStats metrics factory
+     * @param folder         the plugin data directory
+     */
     @Inject
     public void init(ProxyServer proxy, PluginDescription description, Logger logger, Metrics.Factory metricsFactory,
                      @DataDirectory Path folder) {
@@ -50,6 +65,11 @@ public class PowerLibPlugin {
         this.metricsFactory = metricsFactory;
     }
 
+    /**
+     * Initializes the plugin once the proxy has started: loads config, registers listeners and metrics.
+     *
+     * @param event the proxy initialization event
+     */
     @Subscribe
     public void onEnable(ProxyInitializeEvent event) {
         registerInstances();
@@ -57,6 +77,11 @@ public class PowerLibPlugin {
         metricsFactory.make(this, 11190);
     }
 
+    /**
+     * Returns the plugin's main configuration ({@code config.yml}).
+     *
+     * @return the loaded configuration
+     */
     public Configuration getConfiguration() {
         return this.velocityConfigManager.get("config.yml");
     }

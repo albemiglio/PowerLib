@@ -1,18 +1,34 @@
 package it.mycraft.powerlib.configuration;
 
+/**
+ * Legacy config manager.
+ *
+ * @deprecated use {@link it.mycraft.powerlib.common.configuration.ConfigManager} instead
+ */
 @Deprecated
 public abstract class ConfigManager {
 
+    /**
+     * @param file the config file name
+     * @return the loaded configuration for that file
+     */
     public abstract Configuration get(String file);
 
     /**
-     * Same as #create(String,String) but source name equals to the new one
+     * Creates the config file from a bundled resource of a different name.
      *
-     * @param file The config file name
-     * @return The new file
+     * @param file   the config file name
+     * @param source the bundled resource name to copy from
+     * @return the new file
      */
     public abstract Configuration create(String file, String source);
 
+    /**
+     * Same as {@link #create(String, String)} but the source name equals the new one.
+     *
+     * @param file the config file name
+     * @return the new file
+     */
     public abstract Configuration create(String file);
 
     /**

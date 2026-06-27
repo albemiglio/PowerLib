@@ -12,9 +12,17 @@ import org.yaml.snakeyaml.representer.Representer;
 
 import java.util.Set;
 
+/**
+ * SnakeYAML representer that serializes a {@link Configuration} by dumping its backing map.
+ *
+ * @deprecated use {@link it.mycraft.powerlib.common.configuration.YamlRepresenter} instead
+ */
 @Deprecated
 public class YamlRepresenter extends Representer {
 
+    /**
+     * @param options the SnakeYAML dumper options
+     */
     public YamlRepresenter(DumperOptions options) {
         super(options);
         representers.put(Configuration.class, data -> represent(((Configuration) data).self));

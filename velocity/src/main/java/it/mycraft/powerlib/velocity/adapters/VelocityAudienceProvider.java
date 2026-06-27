@@ -6,6 +6,9 @@ import net.kyori.adventure.audience.Audience;
 
 import java.util.function.Predicate;
 
+/**
+ * Velocity implementation of {@link AudienceProvider}, delegating to {@link AudienceAdapter}.
+ */
 public class VelocityAudienceProvider implements AudienceProvider {
 
     @Override

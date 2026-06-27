@@ -17,9 +17,22 @@ public final class Framing {
     private Framing() {
     }
 
+    /**
+     * A decoded frame: a logical channel name and its raw payload.
+     *
+     * @param channel the logical channel name
+     * @param data    the raw payload bytes
+     */
     public record Frame(String channel, byte[] data) {
     }
 
+    /**
+     * Encodes a logical channel name and payload into a single frame.
+     *
+     * @param channel the logical channel name
+     * @param data    the raw payload bytes
+     * @return the encoded frame
+     */
     public static byte[] frame(String channel, byte[] data) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream out = new DataOutputStream(bytes)) {
@@ -32,6 +45,12 @@ public final class Framing {
         return bytes.toByteArray();
     }
 
+    /**
+     * Decodes a frame produced by {@link #frame(String, byte[])}.
+     *
+     * @param frame the encoded frame bytes
+     * @return the decoded channel name and payload
+     */
     public static Frame parse(byte[] frame) {
         try (DataInputStream in = new DataInputStream(new ByteArrayInputStream(frame))) {
             String channel = in.readUTF();

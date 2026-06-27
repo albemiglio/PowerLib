@@ -7,8 +7,17 @@ import java.io.*;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Small helpers for fetching JSON from a URL.
+ */
 public class JSONUtils {
 
+    /**
+     * Reads and parses the JSON object at the given URL.
+     *
+     * @param url the URL to read from
+     * @return the parsed JSON object, or {@code null} if it could not be read
+     */
     public static JsonObject getJSON(String url) {
         try {
             InputStream is = new URL(url).openStream();
@@ -27,6 +36,10 @@ public class JSONUtils {
         }
     }
 
+    /**
+     * @param url the URL to read from
+     * @return {@code true} if the URL could be read without error
+     */
     public static boolean isValidJSON(String url) {
         try {
             try (InputStream is = new URL(url).openStream()) {

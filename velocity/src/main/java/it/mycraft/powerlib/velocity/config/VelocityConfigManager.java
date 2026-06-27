@@ -12,6 +12,11 @@ import java.net.URISyntaxException;
  */
 public class VelocityConfigManager extends ConfigManager {
 
+    /**
+     * Creates a config manager rooted at the plugin's data folder under the Velocity install directory.
+     *
+     * @param pluginDescription the plugin description used to locate the data folder and plugin jar
+     */
     public VelocityConfigManager(PluginDescription pluginDescription) {
         super(dataFolder(pluginDescription), pluginJar(pluginDescription));
     }

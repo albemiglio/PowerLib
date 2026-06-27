@@ -6,6 +6,9 @@ import net.md_5.bungee.api.CommandSender;
 
 import java.util.function.Predicate;
 
+/**
+ * BungeeCord {@link AudienceProvider} backed by {@link AudienceAdapter}.
+ */
 public class BungeeAudienceProvider implements AudienceProvider {
 
     @Override

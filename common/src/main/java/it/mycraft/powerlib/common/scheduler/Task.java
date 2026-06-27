@@ -5,7 +5,9 @@ package it.mycraft.powerlib.common.scheduler;
  */
 public interface Task {
 
+    /** Cancels the task so it will not run again. */
     void cancel();
 
+    /** @return {@code true} if the task has been cancelled */
     boolean isCancelled();
 }

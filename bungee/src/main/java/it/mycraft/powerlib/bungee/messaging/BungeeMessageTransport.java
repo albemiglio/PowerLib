@@ -17,10 +17,14 @@ import java.util.function.BiConsumer;
  */
 public class BungeeMessageTransport implements MessageTransport, Listener {
 
+    /** Plugin messaging channel used for the {@code powerlib:main} link. */
     public static final String MC_CHANNEL = "powerlib:main";
 
     private volatile BiConsumer<String, byte[]> handler;
 
+    /**
+     * Registers the plugin messaging channel and this listener on the proxy.
+     */
     public BungeeMessageTransport() {
         ProxyServer proxy = ProxyServer.getInstance();
         proxy.registerChannel(MC_CHANNEL);
@@ -35,6 +39,12 @@ public class BungeeMessageTransport implements MessageTransport, Listener {
         }
     }
 
+    /**
+     * Handles inbound plugin messages on {@link #MC_CHANNEL}, cancelling them and forwarding the
+     * decoded frame to the registered handler.
+     *
+     * @param event the plugin message event
+     */
     @EventHandler
     public void onPluginMessage(PluginMessageEvent event) {
         if (!MC_CHANNEL.equals(event.getTag())) {

@@ -10,6 +10,11 @@ import java.io.File;
  */
 public class BukkitConfigManager extends ConfigManager {
 
+    /**
+     * Creates a config manager rooted at the plugin's data folder, reading defaults from the plugin jar.
+     *
+     * @param plugin the owning plugin
+     */
     public BukkitConfigManager(JavaPlugin plugin) {
         super(plugin.getDataFolder(),
                 new File(plugin.getClass().getProtectionDomain().getCodeSource().getLocation().getPath()));

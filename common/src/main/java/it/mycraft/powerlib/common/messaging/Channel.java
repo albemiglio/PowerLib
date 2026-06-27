@@ -14,10 +14,19 @@ public final class Channel<T> {
         this.codec = codec;
     }
 
+    /**
+     * Declares a channel with the given name and payload codec.
+     *
+     * @param name  the channel name shared by both ends
+     * @param codec codec used to encode and decode the payload
+     * @param <T>   the payload type
+     * @return a new channel declaration
+     */
     public static <T> Channel<T> of(String name, Codec<T> codec) {
         return new Channel<>(name, codec);
     }
 
+    /** @return the channel name */
     public String name() {
         return name;
     }

@@ -8,10 +8,19 @@ import java.nio.charset.StandardCharsets;
  */
 public interface Codec<T> {
 
+    /**
+     * @param value the payload to serialize
+     * @return the encoded bytes
+     */
     byte[] encode(T value);
 
+    /**
+     * @param data the encoded bytes
+     * @return the deserialized payload
+     */
     T decode(byte[] data);
 
+    /** @return a codec that encodes strings as UTF-8 bytes */
     static Codec<String> string() {
         return new Codec<>() {
             @Override

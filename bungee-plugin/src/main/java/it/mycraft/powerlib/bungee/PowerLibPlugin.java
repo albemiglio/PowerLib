@@ -39,6 +39,11 @@ public class PowerLibPlugin extends Plugin implements Listener {
         new Metrics(this, 11162);
     }
 
+    /**
+     * Returns the plugin's main configuration ({@code config.yml}).
+     *
+     * @return the loaded configuration
+     */
     public Configuration getConfiguration() {
         return this.bungeeConfigManager.get("config.yml");
     }

@@ -21,6 +21,7 @@ public final class Messengers {
         return transport == null ? null : new Messenger(transport);
     }
 
+    /** @return the shared messenger, or {@code null} if no transport is registered */
     public static Messenger get() {
         return INSTANCE;
     }

@@ -9,6 +9,10 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 
+/**
+ * Fluent builder for chest {@link Inventory}s, with helpers to fill rows, columns, borders, and
+ * chess-patterned borders, place items by slot, and open the result to a player.
+ */
 public class InventoryBuilder {
 
 
@@ -20,6 +24,9 @@ public class InventoryBuilder {
     private ItemStack fillBorder;
     private InventoryHolder inventoryHolder;
 
+    /**
+     * Creates an empty inventory builder.
+     */
     public InventoryBuilder() {
         setItem = new HashMap<>();
         fillChessBorder = new ArrayList<>();

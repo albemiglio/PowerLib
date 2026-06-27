@@ -15,6 +15,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
+/**
+ * Manages a plugin's YAML config files, extracting defaults from the jar and caching them in memory.
+ *
+ * @deprecated use {@link it.mycraft.powerlib.common.configuration.ConfigManager} instead
+ */
 @Deprecated
 public class ConfigManager {
 
@@ -24,6 +29,11 @@ public class ConfigManager {
     private File serverJar;
     private File pluginJar;
 
+    /**
+     * Creates the manager, resolving the plugin's jar and data folder (created if missing).
+     *
+     * @param plugin the owning plugin
+     */
     public ConfigManager(Plugin plugin) {
         this.plugin = plugin;
         this.configs = new HashMap<>();
@@ -51,9 +61,10 @@ public class ConfigManager {
     }
 
     /**
-     * Same as #create(String,String) but source name equals to the new one
+     * Creates the config file from the named bundled resource if it doesn't exist yet, then loads it.
      *
-     * @param file The config file name
+     * @param file   The config file name
+     * @param source The bundled resource name to copy from
      * @return The new file
      */
     public Configuration create(String file, String source) {
@@ -65,6 +76,12 @@ public class ConfigManager {
         return this.configs.get(file);
     }
 
+    /**
+     * Creates a config file from a bundled resource of the same name, then loads it.
+     *
+     * @param file the config file name, also used as the source resource name
+     * @return the created file
+     */
     public Configuration create(String file) {
         return create(file, file);
     }

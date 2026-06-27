@@ -9,6 +9,10 @@ import org.bukkit.entity.Player;
 import java.lang.reflect.Constructor;
 import java.util.logging.Level;
 
+/**
+ * Reflection helpers for cross-version server access: resolving NMS/OBC/Bukkit classes, detecting the
+ * server version, and sending packets and titles on legacy versions.
+ */
 public class ReflectionAPI {
 
     /**

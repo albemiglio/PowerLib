@@ -17,10 +17,14 @@ import java.util.function.BiConsumer;
  */
 public class VelocityMessageTransport implements MessageTransport {
 
+    /** The shared plugin-messaging channel identifier ({@code powerlib:main}). */
     public static final ChannelIdentifier CHANNEL = MinecraftChannelIdentifier.create("powerlib", "main");
 
     private volatile BiConsumer<String, byte[]> handler;
 
+    /**
+     * Registers the {@code powerlib:main} channel and subscribes this transport to plugin-message events.
+     */
     public VelocityMessageTransport() {
         PowerLib.getProxy().getChannelRegistrar().register(CHANNEL);
         PowerLib.getProxy().getEventManager().register(PowerLib.getPlugin(), this);
@@ -34,6 +38,12 @@ public class VelocityMessageTransport implements MessageTransport {
         }
     }
 
+    /**
+     * Handles inbound plugin messages on the {@code powerlib:main} channel, unframing them and
+     * dispatching to the registered handler. Marks matching events as handled so they are not forwarded.
+     *
+     * @param event the incoming plugin-message event
+     */
     @Subscribe
     public void onPluginMessage(PluginMessageEvent event) {
         if (!CHANNEL.equals(event.getIdentifier())) {

@@ -16,6 +16,11 @@ import java.util.stream.Collectors;
 
 import static net.kyori.adventure.text.Component.text;
 
+/**
+ * A chat message built on Adventure components, with helpers for color codes, MiniMessage markup,
+ * placeholders, hover/click events, and sending to players, the console, or filtered audiences.
+ * A message holds either a single line or a list of lines.
+ */
 public class Message {
 
     private static final AudienceProvider PROVIDER = Audiences.getProvider();
@@ -39,24 +44,49 @@ public class Message {
     private HoverEvent<?> hoverEvent;
     private ClickEvent clickEvent;
 
+    /**
+     * Creates an empty message.
+     */
     public Message() {
         this.singleLineMessage = text("");
         this.multiLineMessages = new ArrayList<>();
     }
 
+    /**
+     * Creates a single-line message.
+     *
+     * @param singleLineMessage the line text
+     * @param color             whether to translate legacy and hex color codes
+     */
     public Message(String singleLineMessage, boolean color) {
         this.singleLineMessage = color ? toComponent(singleLineMessage) : text(singleLineMessage);
         this.multiLineMessages = new ArrayList<>();
     }
 
+    /**
+     * Creates a single-line message with color codes translated.
+     *
+     * @param singleLineMessage the line text
+     */
     public Message(String singleLineMessage) {
         this(singleLineMessage, true);
     }
 
+    /**
+     * Creates a multi-line message with color codes translated.
+     *
+     * @param multiLineMessages the lines
+     */
     public Message(String... multiLineMessages) {
         this(Arrays.asList(multiLineMessages), true);
     }
 
+    /**
+     * Creates a multi-line message.
+     *
+     * @param multiLineMessages the lines
+     * @param color             whether to translate legacy and hex color codes
+     */
     public Message(List<String> multiLineMessages, boolean color) {
         this.singleLineMessage = text("");
         this.multiLineMessages = multiLineMessages.stream()
@@ -64,6 +94,11 @@ public class Message {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Creates a multi-line message with color codes translated.
+     *
+     * @param multiLineMessages the lines
+     */
     public Message(List<String> multiLineMessages) {
         this(multiLineMessages, true);
     }
@@ -79,10 +114,22 @@ public class Message {
         return m;
     }
 
+    /**
+     * Builds a multi-line message from MiniMessage markup.
+     *
+     * @param lines the MiniMessage lines
+     * @return the message
+     */
     public static Message mini(String... lines) {
         return mini(Arrays.asList(lines));
     }
 
+    /**
+     * Builds a multi-line message from MiniMessage markup.
+     *
+     * @param lines the MiniMessage lines
+     * @return the message
+     */
     public static Message mini(List<String> lines) {
         Message m = new Message();
         m.multiLineMessages = lines.stream()
@@ -91,6 +138,13 @@ public class Message {
         return m;
     }
 
+    /**
+     * Replaces every literal occurrence of a placeholder, in all lines, with the given value.
+     *
+     * @param placeholder the literal text to replace
+     * @param value       the replacement value (converted with {@link String#valueOf(Object)})
+     * @return this message
+     */
     public Message addPlaceHolder(String placeholder, Object value) {
         String replacement = String.valueOf(value);
         this.singleLineMessage = replace(this.singleLineMessage, placeholder, replacement);
@@ -102,16 +156,34 @@ public class Message {
         return component.replaceText(builder -> builder.matchLiteral(placeholder).replacement(value));
     }
 
+    /**
+     * Replaces the single-line text, translating color codes.
+     *
+     * @param message the new line text
+     * @return this message
+     */
     public Message set(String message) {
         this.singleLineMessage = toComponent(message);
         return this;
     }
 
+    /**
+     * Replaces the multi-line text, translating color codes.
+     *
+     * @param messages the new lines
+     * @return this message
+     */
     public Message set(List<String> messages) {
         this.multiLineMessages = messages.stream().map(Message::toComponent).collect(Collectors.toList());
         return this;
     }
 
+    /**
+     * Replaces the multi-line text, translating color codes.
+     *
+     * @param messages the new lines
+     * @return this message
+     */
     public Message set(String... messages) {
         return set(Arrays.asList(messages));
     }
@@ -148,6 +220,12 @@ public class Message {
         return this;
     }
 
+    /**
+     * Appends other messages to this single-line message.
+     *
+     * @param messages the messages to append
+     * @return this message
+     */
     public Message append(Message... messages) {
         Arrays.stream(messages).map(m -> (Component[])
                         (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray(new Component[0])))
@@ -168,6 +246,12 @@ public class Message {
         return this;
     }
 
+    /**
+     * Appends other messages as additional lines.
+     *
+     * @param messages the messages to append as lines
+     * @return this message
+     */
     public Message appendLines(Message... messages) {
         Arrays.stream(messages).map(m -> (Component[])
                         (m.getComponentList().isEmpty() ? new Component[]{m.getComponent()} : m.getComponentList().toArray(new Component[0])))
@@ -183,14 +267,21 @@ public class Message {
         return LEGACY.serialize(singleLineMessage);
     }
 
+    /**
+     * The lines as legacy section-sign strings. Prefer {@link #getComponentList()} for modern usage.
+     *
+     * @return the legacy-serialized lines
+     */
     public List<String> getTextList() {
         return multiLineMessages.stream().map(LEGACY::serialize).collect(Collectors.toList());
     }
 
+    /** @return the single-line message component */
     public Component getComponent() {
         return singleLineMessage;
     }
 
+    /** @return a copy of the message lines as components */
     public List<Component> getComponentList() {
         return new ArrayList<>(multiLineMessages);
     }
@@ -266,6 +357,7 @@ public class Message {
 
     /**
      * @deprecated colors are now applied automatically when the message is created; this is a no-op.
+     * @return this message
      */
     @Deprecated
     public Message color() {
@@ -274,6 +366,9 @@ public class Message {
 
     /**
      * @deprecated hex colors are now applied automatically when the message is created; this is a no-op.
+     * @param pre  ignored
+     * @param post ignored
+     * @return this message
      */
     @Deprecated
     public Message hex(String pre, String post) {
@@ -282,6 +377,7 @@ public class Message {
 
     /**
      * @deprecated hex colors are now applied automatically when the message is created; this is a no-op.
+     * @return this message
      */
     @Deprecated
     public Message hex() {

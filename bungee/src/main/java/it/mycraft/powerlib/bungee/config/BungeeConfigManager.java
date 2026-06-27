@@ -8,6 +8,11 @@ import net.md_5.bungee.api.plugin.Plugin;
  */
 public class BungeeConfigManager extends ConfigManager {
 
+    /**
+     * Creates a config manager rooted at the plugin's data folder and jar.
+     *
+     * @param plugin the owning plugin
+     */
     public BungeeConfigManager(Plugin plugin) {
         super(plugin.getDataFolder(), plugin.getFile());
     }

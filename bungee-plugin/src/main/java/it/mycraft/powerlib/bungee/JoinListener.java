@@ -9,14 +9,27 @@ import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
+/**
+ * Notifies players with the {@code powerlib.update} permission when a newer PowerLib release is available.
+ */
 public class JoinListener implements Listener {
 
     private final PowerLibPlugin instance;
 
+    /**
+     * Creates the listener bound to the owning plugin.
+     *
+     * @param instance the PowerLib plugin instance
+     */
     public JoinListener(PowerLibPlugin instance) {
         this.instance = instance;
     }
 
+    /**
+     * Checks for updates on player login and, if one is available, sends a clickable update notice.
+     *
+     * @param event the player login event
+     */
     @EventHandler
     public void onJoin(PostLoginEvent event) {
         if(!instance.getConfiguration().getBoolean("check-for-updates")) {

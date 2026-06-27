@@ -8,10 +8,18 @@ import java.util.function.BiConsumer;
  */
 public interface MessageTransport {
 
+    /**
+     * Sends a raw frame on the given channel.
+     *
+     * @param channel the logical channel name
+     * @param data    the raw payload bytes
+     */
     void send(String channel, byte[] data);
 
     /**
      * Registers the single handler invoked for every inbound frame. Called once by {@link Messenger}.
+     *
+     * @param handler receives the channel name and the raw payload of each inbound frame
      */
     void listen(BiConsumer<String, byte[]> handler);
 }

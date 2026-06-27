@@ -15,8 +15,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * SnakeYAML representer that serializes a {@link Configuration} by dumping its backing map.
+ */
 public class YamlRepresenter extends Representer {
 
+    /**
+     * @param options the SnakeYAML dumper options
+     */
     public YamlRepresenter(DumperOptions options) {
         super(options);
         representers.put(Configuration.class, data -> represent(((Configuration) data).self));

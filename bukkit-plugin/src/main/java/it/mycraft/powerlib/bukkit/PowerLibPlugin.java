@@ -41,6 +41,11 @@ public class PowerLibPlugin extends JavaPlugin implements Listener {
         new Metrics(this, 11161);
     }
 
+    /**
+     * Returns the plugin's main configuration ({@code config.yml}).
+     *
+     * @return the loaded configuration
+     */
     public Configuration getConfiguration() {
         return this.bukkitConfigManager.get("config.yml");
     }

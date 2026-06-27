@@ -3,10 +3,18 @@ package it.mycraft.powerlib.common.chance;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
+/**
+ * A weighted random draw: objects are added with integer or decimal weights and one is picked with
+ * probability proportional to its weight. Integer and decimal weights are tracked separately, and
+ * each method takes a flag selecting which set to operate on.
+ */
 public class RandomDraw {
     private HashMap<Object, Integer> intMap;
     private HashMap<Object, Double> doubleMap;
 
+    /**
+     * Creates an empty draw.
+     */
     public RandomDraw() {
         this.intMap = new HashMap<>();
         this.doubleMap = new HashMap<>();
