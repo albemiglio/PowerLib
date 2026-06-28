@@ -425,6 +425,7 @@ public class ItemBuilder implements Cloneable {
             Color color = Color.fromRGB(red, green, blue);
             leatherArmorMeta.setColor(color);
         } catch (Exception ignored) {
+            // Out-of-range RGB or non-leather meta: leave the armor uncoloured.
         }
         leatherArmor.setItemMeta(leatherArmorMeta);
         return leatherArmor;
