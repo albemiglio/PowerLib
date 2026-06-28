@@ -78,9 +78,9 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
-            <groupId>org.mockbukkit.mockbukkit</groupId>
-            <artifactId>mockbukkit-v1.21</artifactId>
-            <version>4.110.0</version>
+            <groupId>com.github.seeseemelk</groupId>
+            <artifactId>MockBukkit-v1.20</artifactId>
+            <version>3.88.1</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -100,22 +100,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <profiles>
-        <!--
-            The bukkit tests use MockBukkit-v1.21 (4.x), which needs the 1.21 API
-            (e.g. CustomModelDataComponent). This module targets paper-api 1.20.4 for
-            Java 17 reach, so those suites cannot run here on any JDK and are skipped.
-            Re-enable by aligning MockBukkit to v1.20 (3.x) or bumping paper-api to 1.21.
-        -->
-        <profile>
-            <id>skip-bukkit-mockbukkit-tests</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <maven.test.skip>true</maven.test.skip>
-            </properties>
-        </profile>
-    </profiles>
 </project>

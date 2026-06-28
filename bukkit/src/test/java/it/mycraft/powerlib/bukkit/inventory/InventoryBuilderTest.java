@@ -6,9 +6,8 @@ import org.bukkit.inventory.ItemStack;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockbukkit.mockbukkit.MockBukkit;
-import org.mockbukkit.mockbukkit.ServerMock;
-import org.mockbukkit.mockbukkit.entity.PlayerMock;
+import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.ServerMock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,13 +28,13 @@ class InventoryBuilderTest {
 
     @Test
     void placeholderWithRegexCharsIsReplacedLiterally() {
-        Inventory inv = new InventoryBuilder().setRows(1)
+        // Both the placeholder token ({, }) and the value ($) contain regex
+        // metacharacters; literal replacement must insert the value verbatim,
+        // whereas a regex replaceAll would throw or mangle the $ group reference.
+        InventoryBuilder builder = new InventoryBuilder().setRows(1)
                 .setTitle("Coins: {count}")
-                .addPlaceHolder("{count}", 5)
-                .build();
-        PlayerMock player = server.addPlayer();
-        player.openInventory(inv);
-        assertEquals("Coins: 5", player.getOpenInventory().getTitle(),
+                .addPlaceHolder("{count}", "$5 (50%)");
+        assertEquals("Coins: $5 (50%)", builder.getTitle(),
                 "a placeholder containing regex metacharacters must be replaced literally");
     }
 

@@ -67,6 +67,15 @@ public class InventoryBuilder {
     }
 
     /**
+     * Gets the current (placeholder-resolved) inventory title.
+     *
+     * @return The title
+     */
+    public String getTitle() {
+        return title;
+    }
+
+    /**
      * Sets an item in the inventory
      *
      * @param slot      The slot
