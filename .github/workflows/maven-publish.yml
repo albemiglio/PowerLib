@@ -1,5 +1,6 @@
-# Build/test sanity check on every push & PR. Publishing to CodeMC is handled
-# by the CodeMC Jenkins job (ci.codemc.io/job/AlbeMiglio/job/PowerLib), not here.
+# Build/test sanity check + SonarCloud analysis on every push & PR. Publishing
+# to CodeMC is handled by the CodeMC Jenkins job
+# (ci.codemc.io/job/AlbeMiglio/job/PowerLib), not here.
 
 name: Build
 
@@ -20,15 +21,34 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
-    - name: Set up JDK 21
+      with:
+        # Shallow clones disable Sonar's "new code" / blame detection.
+        fetch-depth: 0
+
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
+        java-version: '17'
         distribution: 'temurin'
         cache: maven
 
-    - name: Build with Maven
-      run: mvn -B package --file pom.xml
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+        restore-keys: ${{ runner.os }}-sonar
+
+    - name: Build, test and analyze
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      run: |
+        if [ -n "$SONAR_TOKEN" ]; then
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar --file pom.xml
+        else
+          echo "SONAR_TOKEN not set - skipping SonarCloud analysis, running build + tests + coverage only."
+          mvn -B verify --file pom.xml
+        fi
 
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
