@@ -32,6 +32,7 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 
@@ -70,6 +71,7 @@ public class ItemBuilder implements Cloneable {
     private SkullMeta skullMeta;
     private Pair<Optional<String>, Optional<String>> itemsAdderData;
     private final Map<NamespacedKey, Pair<PersistentDataType, Object>> persistentData = new HashMap<>();
+    private final List<Consumer<ItemMeta>> buildSteps = new ArrayList<>();
 
     /**
      * Creates an item builder with default values (a single STONE with empty name and lore).
@@ -80,6 +82,18 @@ public class ItemBuilder implements Cloneable {
         potions = new HashMap<>();
         placeholders = new HashMap<>();
         itemsAdderData = new Pair<>(Optional.empty(), Optional.empty());
+    }
+
+    /**
+     * Registers a step applied to the {@link ItemMeta} during {@link #build()}, after the
+     * standard meta is written. Lets add-on modules apply API the core builder doesn't know about.
+     *
+     * @param step the meta mutation to apply at build time
+     * @return The ItemBuilder
+     */
+    public ItemBuilder addBuildStep(Consumer<ItemMeta> step) {
+        buildSteps.add(step);
+        return this;
     }
 
     /**
@@ -517,6 +531,10 @@ public class ItemBuilder implements Cloneable {
 
             for (Map.Entry<NamespacedKey, Pair<PersistentDataType, Object>> entry : persistentData.entrySet()) {
                 itemMeta.getPersistentDataContainer().set(entry.getKey(), entry.getValue().getLeft(), entry.getValue().getRight());
+            }
+
+            for (Consumer<ItemMeta> step : buildSteps) {
+                step.accept(itemMeta);
             }
 
             itemStack.setItemMeta(itemMeta);

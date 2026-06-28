@@ -24,6 +24,12 @@
         <module>velocity</module>
         <module>velocity-plugin</module>
         <module>all</module>
+        <module>minimessage</module>
+        <module>components</module>
+        <module>commands-api</module>
+        <module>commands-bukkit</module>
+        <module>commands-bungee</module>
+        <module>commands-velocity</module>
     </modules>
 
     <distributionManagement>
