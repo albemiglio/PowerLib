@@ -4,149 +4,244 @@ import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * A weighted random draw: objects are added with integer or decimal weights and one is picked with
- * probability proportional to its weight. Integer and decimal weights are tracked separately, and
- * each method takes a flag selecting which set to operate on.
+ * A weighted random draw over a fixed, closed set of items: each item is added with a weight and
+ * picked with probability proportional to its weight (weights need not sum to 1 — they are
+ * normalised internally).
  *
- * <p>Draws use Vose's <i>alias method</i>: the first {@link #shuffle(boolean)} after a change builds
- * an alias table in {@code O(n)}, and every draw after that is {@code O(1)} with the exact weighted
- * probabilities (no list materialisation, no per-draw scan). The table is rebuilt lazily whenever an
- * item is added or removed.</p>
+ * <p>Draws use Vose's <i>alias method</i>: the first {@link #pick()} after a change builds an alias
+ * table in {@code O(n)} and every pick after that is {@code O(1)} with the exact weighted
+ * probabilities. The table is rebuilt lazily whenever an item is added or removed.</p>
+ *
+ * <pre>{@code
+ * RandomDraw<String> loot = new RandomDraw<String>()
+ *         .add("common", 70)
+ *         .add("rare", 25)
+ *         .add("legendary", 5);
+ *
+ * String one = loot.pick();          // O(1)
+ * List<String> ten = loot.pick(10);  // ten independent picks
+ *
+ * // one-shot, à la Python's random.choices:
+ * List<String> drops = RandomDraw.choices(
+ *         List.of("a", "b", "c"), new double[]{0.1, 0.3, 0.6}, 5);
+ * }</pre>
+ *
+ * @param <T> the type of the drawn items
  */
-public class RandomDraw {
-    private HashMap<Object, Integer> intMap;
-    private HashMap<Object, Double> doubleMap;
-
-    // Lazily built O(1) samplers; nulled out whenever the matching map changes.
-    private transient Alias intAlias;
-    private transient Alias doubleAlias;
+public class RandomDraw<T> {
+    private final Map<T, Double> weights = new LinkedHashMap<>();
+    private transient Alias alias;
 
     /**
      * Creates an empty draw.
      */
     public RandomDraw() {
-        this.intMap = new HashMap<>();
-        this.doubleMap = new HashMap<>();
     }
+
+    /**
+     * Builds a draw from a map of items to weights.
+     *
+     * @param weights the items and their (positive) weights
+     * @param <T>     the item type
+     * @return a draw over the given items
+     */
+    public static <T> RandomDraw<T> of(Map<T, Double> weights) {
+        RandomDraw<T> draw = new RandomDraw<>();
+        weights.forEach(draw::add);
+        return draw;
+    }
+
+    /**
+     * Draws {@code k} items (with replacement) from a population and matching weights, in a single
+     * call — the equivalent of Python's {@code random.choices(population, weights, k=k)}. Repeated
+     * items in the population have their weights summed.
+     *
+     * @param population the items to draw from
+     * @param weights    one weight per item (same size as {@code population})
+     * @param k          how many items to draw
+     * @param <T>        the item type
+     * @return {@code k} independently drawn items (empty if there is nothing to draw)
+     */
+    public static <T> List<T> choices(List<T> population, double[] weights, int k) {
+        if (population.size() != weights.length) {
+            throw new IllegalArgumentException("population and weights must have the same size");
+        }
+        RandomDraw<T> draw = new RandomDraw<>();
+        for (int i = 0; i < population.size(); i++) {
+            draw.weights.merge(population.get(i), weights[i], Double::sum);
+        }
+        return draw.pick(k);
+    }
+
+    /**
+     * Adds (or re-weights) an item.
+     *
+     * @param item   the item
+     * @param weight its weight; zero or negative means it is kept but never drawn
+     * @return this draw, for chaining
+     */
+    public RandomDraw<T> add(T item, double weight) {
+        this.weights.put(item, weight);
+        this.alias = null;
+        return this;
+    }
+
+    /**
+     * Removes an item from the draw.
+     *
+     * @param item the item to remove
+     * @return this draw, for chaining
+     */
+    public RandomDraw<T> remove(T item) {
+        if (this.weights.remove(item) != null) {
+            this.alias = null;
+        }
+        return this;
+    }
+
+    /**
+     * @return true if no item has been added
+     */
+    public boolean isEmpty() {
+        return this.weights.isEmpty();
+    }
+
+    /**
+     * @param item the item
+     * @return the item's weight, or 0 if it is not in the draw
+     */
+    public double weightOf(T item) {
+        return this.weights.getOrDefault(item, 0.0);
+    }
+
+    /**
+     * @return the sum of every item's weight
+     */
+    public double total() {
+        double sum = 0;
+        for (double w : this.weights.values()) {
+            sum += w;
+        }
+        return sum;
+    }
+
+    /**
+     * @param item the item
+     * @return the item's effective chance of being drawn (weight / total), or 0
+     */
+    public double probabilityOf(T item) {
+        double total = this.total();
+        return total <= 0 ? 0 : this.weightOf(item) / total;
+    }
+
+    /**
+     * Draws one item with probability proportional to its weight, in {@code O(1)}.
+     *
+     * @return a drawn item, or null if there is nothing to draw
+     */
+    public T pick() {
+        if (this.weights.isEmpty()) {
+            return null;
+        }
+        if (this.alias == null) {
+            this.alias = Alias.build(this.weights);
+            if (this.alias == null) { // all weights non-positive
+                return null;
+            }
+        }
+        return this.cast(this.alias.draw(ThreadLocalRandom.current()));
+    }
+
+    /**
+     * Draws {@code k} items, with replacement (each pick is independent), in {@code O(k)}.
+     *
+     * @param k how many items to draw
+     * @return a list of drawn items; empty if there is nothing to draw
+     */
+    public List<T> pick(int k) {
+        List<T> out = new ArrayList<>(Math.max(0, k));
+        for (int i = 0; i < k; i++) {
+            T item = this.pick();
+            if (item == null) {
+                break;
+            }
+            out.add(item);
+        }
+        return out;
+    }
+
+    @SuppressWarnings("unchecked")
+    private T cast(Object o) {
+        return (T) o;
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Legacy API — kept for backward compatibility, now backed by the alias method. Prefer the
+    // methods above (add / pick / probabilityOf); the integer/decimal split and the boolean flag
+    // are no longer needed.
+    // ------------------------------------------------------------------------------------------
 
     /**
      * @param map             A HashMap with the drawing objects as keys and their chances as values
      * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
+     * @deprecated use {@link #of(Map)} or {@link #add(Object, double)}
      */
+    @Deprecated
+    @SuppressWarnings("unchecked")
     public RandomDraw(HashMap<Object, Double> map, boolean useDoubleValues) {
-        if (useDoubleValues) {
-            this.doubleMap = map;
-            this.intMap = new HashMap<>();
-        } else {
-            this.intMap = new HashMap<>();
-            this.doubleMap = new HashMap<>();
-            map.keySet().forEach((key) -> this.intMap.put(key, map.get(key).intValue()));
-        }
+        map.forEach((key, value) -> this.add((T) key, useDoubleValues ? value : value.intValue()));
     }
 
     /**
-     * Adds an Item with an integer chance to be extracted
-     *
-     * @param obj         The object being added to the draw
-     * @param probability The object's INTEGER chance of being drawn
+     * @deprecated use {@link #add(Object, double)}
      */
+    @Deprecated
+    @SuppressWarnings("unchecked")
     public void addItem(Object obj, Integer probability) {
-        this.intMap.put(obj, probability);
-        this.intAlias = null;
+        this.add((T) obj, probability);
     }
 
     /**
-     * Adds an Item with a decimal chance to be extracted
-     *
-     * @param obj         The object being added to the draw
-     * @param probability The object's DECIMAL chance of being drawn
+     * @deprecated use {@link #add(Object, double)}
      */
+    @Deprecated
+    @SuppressWarnings("unchecked")
     public void addItem(Object obj, Double probability) {
-        this.doubleMap.put(obj, probability);
-        this.doubleAlias = null;
+        this.add((T) obj, probability);
     }
 
     /**
-     * Removes an Item, if present, from the extraction
-     *
-     * @param obj           The object being removed from the draw
-     * @param isDoubleValue If the map is using decimal numbers (false for integers e.g. 1.0)
+     * @deprecated use {@link #remove(Object)}
      */
+    @Deprecated
+    @SuppressWarnings("unchecked")
     public void removeItem(Object obj, boolean isDoubleValue) {
-        if (isDoubleValue) {
-            this.doubleMap.remove(obj);
-            this.doubleAlias = null;
-        } else {
-            this.intMap.remove(obj);
-            this.intAlias = null;
-        }
+        this.remove((T) obj);
     }
 
     /**
-     * Sums the chances of all the items of the extraction
-     *
-     * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
-     * @return The total probability of the draw
+     * @deprecated use {@link #total()}
      */
+    @Deprecated
     public Double getTotalChance(boolean useDoubleValues) {
-        double d;
-        if (useDoubleValues) {
-            d = this.doubleMap.values().stream().mapToDouble(n -> n).sum();
-        } else {
-            d = this.intMap.values().stream().mapToInt(n -> n).sum();
-        }
-        return d;
+        return this.total();
     }
 
     /**
-     * Divides the object's partial probability by the total probability to get the effective chance
-     *
-     * @param obj             The object whose chance we don't know about
-     * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
-     * @return The related item's chance to be extracted
+     * @deprecated use {@link #probabilityOf(Object)}
      */
+    @Deprecated
+    @SuppressWarnings("unchecked")
     public Double getProbability(Object obj, boolean useDoubleValues) {
-        double d;
-        double total = this.getTotalChance(useDoubleValues);
-        if (!contains(obj, useDoubleValues)) {
-            return 0.0;
-        }
-        if (useDoubleValues) {
-            d = this.doubleMap.get(obj) / total;
-        } else {
-            d = this.intMap.get(obj) / total;
-        }
-        return d;
+        return this.probabilityOf((T) obj);
     }
 
     /**
-     * Draws a random item with a probability proportional to its weight, in {@code O(1)}.
-     *
-     * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
-     * @return The random-extracted item, or null if there is nothing to draw
+     * @deprecated use {@link #pick()}
      */
+    @Deprecated
     public Object shuffle(boolean useDoubleValues) {
-        Map<Object, ? extends Number> map = useDoubleValues ? this.doubleMap : this.intMap;
-        if (map.isEmpty()) {
-            return null;
-        }
-        Alias alias = useDoubleValues ? this.doubleAlias : this.intAlias;
-        if (alias == null) {
-            alias = Alias.build(map);
-            if (alias == null) { // all weights non-positive
-                return null;
-            }
-            if (useDoubleValues) {
-                this.doubleAlias = alias;
-            } else {
-                this.intAlias = alias;
-            }
-        }
-        return alias.draw(ThreadLocalRandom.current());
-    }
-
-    private boolean contains(Object obj, boolean useDoubleValues) {
-        return (useDoubleValues && this.doubleMap.containsKey(obj)) || ((!useDoubleValues) && this.intMap.containsKey(obj));
+        return this.pick();
     }
 
     /**
@@ -173,13 +268,13 @@ public class RandomDraw {
         /**
          * Builds the alias table, or returns null if the weights do not sum to a positive total.
          */
-        private static Alias build(Map<Object, ? extends Number> weights) {
+        private static Alias build(Map<?, ? extends Number> weights) {
             int n = weights.size();
             Object[] items = new Object[n];
             double[] scaled = new double[n];
             double total = 0;
             int i = 0;
-            for (Map.Entry<Object, ? extends Number> entry : weights.entrySet()) {
+            for (Map.Entry<?, ? extends Number> entry : weights.entrySet()) {
                 double w = entry.getValue().doubleValue();
                 items[i] = entry.getKey();
                 scaled[i] = w < 0 ? 0 : w; // clamp negatives so they behave like zero, never drawn
