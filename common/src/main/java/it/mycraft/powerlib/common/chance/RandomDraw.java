@@ -7,10 +7,19 @@ import java.util.concurrent.ThreadLocalRandom;
  * A weighted random draw: objects are added with integer or decimal weights and one is picked with
  * probability proportional to its weight. Integer and decimal weights are tracked separately, and
  * each method takes a flag selecting which set to operate on.
+ *
+ * <p>Draws use Vose's <i>alias method</i>: the first {@link #shuffle(boolean)} after a change builds
+ * an alias table in {@code O(n)}, and every draw after that is {@code O(1)} with the exact weighted
+ * probabilities (no list materialisation, no per-draw scan). The table is rebuilt lazily whenever an
+ * item is added or removed.</p>
  */
 public class RandomDraw {
     private HashMap<Object, Integer> intMap;
     private HashMap<Object, Double> doubleMap;
+
+    // Lazily built O(1) samplers; nulled out whenever the matching map changes.
+    private transient Alias intAlias;
+    private transient Alias doubleAlias;
 
     /**
      * Creates an empty draw.
@@ -43,6 +52,7 @@ public class RandomDraw {
      */
     public void addItem(Object obj, Integer probability) {
         this.intMap.put(obj, probability);
+        this.intAlias = null;
     }
 
     /**
@@ -53,6 +63,7 @@ public class RandomDraw {
      */
     public void addItem(Object obj, Double probability) {
         this.doubleMap.put(obj, probability);
+        this.doubleAlias = null;
     }
 
     /**
@@ -64,7 +75,11 @@ public class RandomDraw {
     public void removeItem(Object obj, boolean isDoubleValue) {
         if (isDoubleValue) {
             this.doubleMap.remove(obj);
-        } else this.intMap.remove(obj);
+            this.doubleAlias = null;
+        } else {
+            this.intMap.remove(obj);
+            this.intAlias = null;
+        }
     }
 
     /**
@@ -105,30 +120,98 @@ public class RandomDraw {
     }
 
     /**
-     * Draws a random item with a probability proportional to its weight.
-     * Uses a cumulative-weight scan (no list materialization, exact distribution).
+     * Draws a random item with a probability proportional to its weight, in {@code O(1)}.
      *
      * @param useDoubleValues If the map is using decimal numbers (false for integers e.g. 1.0)
      * @return The random-extracted item, or null if there is nothing to draw
      */
     public Object shuffle(boolean useDoubleValues) {
         Map<Object, ? extends Number> map = useDoubleValues ? this.doubleMap : this.intMap;
-        double total = this.getTotalChance(useDoubleValues);
-        if (map.isEmpty() || total <= 0) {
+        if (map.isEmpty()) {
             return null;
         }
-        double target = ThreadLocalRandom.current().nextDouble(total);
-        double cumulative = 0;
-        for (Map.Entry<Object, ? extends Number> entry : map.entrySet()) {
-            cumulative += entry.getValue().doubleValue();
-            if (target < cumulative) {
-                return entry.getKey();
+        Alias alias = useDoubleValues ? this.doubleAlias : this.intAlias;
+        if (alias == null) {
+            alias = Alias.build(map);
+            if (alias == null) { // all weights non-positive
+                return null;
+            }
+            if (useDoubleValues) {
+                this.doubleAlias = alias;
+            } else {
+                this.intAlias = alias;
             }
         }
-        return null;
+        return alias.draw(ThreadLocalRandom.current());
     }
 
     private boolean contains(Object obj, boolean useDoubleValues) {
         return (useDoubleValues && this.doubleMap.containsKey(obj)) || ((!useDoubleValues) && this.intMap.containsKey(obj));
+    }
+
+    /**
+     * Immutable Vose alias table over a fixed set of weighted items. Build is {@code O(n)};
+     * {@link #draw(ThreadLocalRandom)} is {@code O(1)}. Items with a zero (or negative) weight are
+     * kept in the table but can never be returned.
+     */
+    private static final class Alias {
+        private final Object[] items;
+        private final double[] prob;  // prob[i] = chance of keeping items[i] vs falling back to alias[i]
+        private final int[] alias;
+
+        private Alias(Object[] items, double[] prob, int[] alias) {
+            this.items = items;
+            this.prob = prob;
+            this.alias = alias;
+        }
+
+        private Object draw(ThreadLocalRandom random) {
+            int column = random.nextInt(prob.length);
+            return random.nextDouble() < prob[column] ? items[column] : items[alias[column]];
+        }
+
+        /**
+         * Builds the alias table, or returns null if the weights do not sum to a positive total.
+         */
+        private static Alias build(Map<Object, ? extends Number> weights) {
+            int n = weights.size();
+            Object[] items = new Object[n];
+            double[] scaled = new double[n];
+            double total = 0;
+            int i = 0;
+            for (Map.Entry<Object, ? extends Number> entry : weights.entrySet()) {
+                double w = entry.getValue().doubleValue();
+                items[i] = entry.getKey();
+                scaled[i] = w < 0 ? 0 : w; // clamp negatives so they behave like zero, never drawn
+                total += scaled[i];
+                i++;
+            }
+            if (total <= 0) {
+                return null;
+            }
+            // Normalise so the average scaled weight is 1 (each entry becomes its share of n).
+            for (int k = 0; k < n; k++) {
+                scaled[k] = scaled[k] * n / total;
+            }
+            double[] prob = new double[n];
+            int[] alias = new int[n];
+            Deque<Integer> small = new ArrayDeque<>();
+            Deque<Integer> large = new ArrayDeque<>();
+            for (int k = 0; k < n; k++) {
+                (scaled[k] < 1.0 ? small : large).add(k);
+            }
+            while (!small.isEmpty() && !large.isEmpty()) {
+                int s = small.poll();
+                int l = large.poll();
+                prob[s] = scaled[s];
+                alias[s] = l;
+                scaled[l] = (scaled[l] + scaled[s]) - 1.0;
+                (scaled[l] < 1.0 ? small : large).add(l);
+            }
+            // Leftovers (floating-point slack) are certainties.
+            while (!large.isEmpty()) prob[large.poll()] = 1.0;
+            while (!small.isEmpty()) prob[small.poll()] = 1.0;
+            return new Alias(items, prob, alias);
+        }
     }
 }
