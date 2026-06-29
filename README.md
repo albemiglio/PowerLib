@@ -65,6 +65,30 @@ dependencies {
 }
 ```
 
+### Alternative: any version via JitPack
+
+You can also pull any tag or commit straight from [JitPack](https://jitpack.io) — no CodeMC needed, built on demand on JDK 17:
+
+```
+<repositories>
+    <repository>
+        <id>jitpack.io</id>
+        <url>https://jitpack.io</url>
+    </repository>
+</repositories>
+
+<dependencies>
+    <dependency>
+        <groupId>com.github.albemiglio.PowerLib</groupId>
+        <artifactId>powerlib-<YOUR-PLATFORM></artifactId>
+        <version>master-SNAPSHOT</version> <!-- or a tag, e.g. 1.3.0 -->
+        <scope>provided</scope>
+    </dependency>
+</dependencies>
+```
+
+Gradle: add `maven { url 'https://jitpack.io' }` and `compileOnly 'com.github.albemiglio.PowerLib:powerlib-<YOUR-PLATFORM>:master-SNAPSHOT'`.
+
 ## Shading PowerLib onto your plugin
 
 Since `v1.2.5` shading is finally available! Here is the Maven configuration to correctly compile it into
