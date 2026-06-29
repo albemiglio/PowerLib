@@ -13,7 +13,7 @@
 
     <properties>
         <junit.version>5.10.2</junit.version>
-        <assertj.version>3.25.3</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
         <mockbukkit.version>3.88.1</mockbukkit.version>
     </properties>
 
