@@ -44,7 +44,8 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         if [ -n "$SONAR_TOKEN" ]; then
-          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar --file pom.xml
+          mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar --file pom.xml \
+            -Dsonar.cpd.exclusions='**/powerlib/configuration/**,**/PluginUpdater.java,**/*Scheduler.java,**/*AudienceProvider.java'
         else
           echo "SONAR_TOKEN not set - skipping SonarCloud analysis, running build + tests + coverage only."
           mvn -B verify --file pom.xml

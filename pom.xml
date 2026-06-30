@@ -60,7 +60,7 @@
                common.configuration, kept only for backwards compatibility;
              - the per-platform updater/scheduler/audience adapters share a shape but target
                three different APIs (Bukkit/Bungee/Velocity) — that is the cost of multi-platform. -->
-        <sonar.cpd.exclusions>**/it/mycraft/powerlib/configuration/**,**/updater/PluginUpdater.java,**/scheduler/*Scheduler.java,**/adapters/*AudienceProvider.java</sonar.cpd.exclusions>
+        <sonar.cpd.exclusions>**/powerlib/configuration/**,**/PluginUpdater.java,**/*Scheduler.java,**/*AudienceProvider.java</sonar.cpd.exclusions>
         <!-- The aggregated report lives in the tests module (it depends on the production modules). -->
         <sonar.coverage.jacoco.xmlReportPaths>
             ${maven.multiModuleProjectDirectory}/tests/target/site/jacoco-aggregate/jacoco.xml
