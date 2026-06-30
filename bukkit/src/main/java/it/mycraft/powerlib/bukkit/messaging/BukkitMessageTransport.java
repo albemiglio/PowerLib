@@ -10,6 +10,7 @@ import org.bukkit.plugin.messaging.Messenger;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
@@ -23,7 +24,7 @@ public class BukkitMessageTransport implements MessageTransport, PluginMessageLi
     /** The shared plugin-messaging channel name ({@code powerlib:main}). */
     public static final String MC_CHANNEL = "powerlib:main";
 
-    private volatile BiConsumer<String, byte[]> handler;
+    private final AtomicReference<BiConsumer<String, byte[]>> handler = new AtomicReference<>();
 
     /**
      * Registers the {@code powerlib:main} channel for incoming and outgoing plugin messages.
@@ -45,7 +46,7 @@ public class BukkitMessageTransport implements MessageTransport, PluginMessageLi
 
     @Override
     public void listen(BiConsumer<String, byte[]> handler) {
-        this.handler = handler;
+        this.handler.set(handler);
     }
 
     @Override
@@ -53,7 +54,7 @@ public class BukkitMessageTransport implements MessageTransport, PluginMessageLi
         if (!MC_CHANNEL.equals(channel)) {
             return;
         }
-        BiConsumer<String, byte[]> current = handler;
+        BiConsumer<String, byte[]> current = handler.get();
         if (current != null) {
             Framing.Frame frame = Framing.parse(message);
             current.accept(frame.channel(), frame.data());

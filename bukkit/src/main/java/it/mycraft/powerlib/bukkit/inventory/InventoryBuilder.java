@@ -227,7 +227,7 @@ public class InventoryBuilder {
     private void fillChessBorder(Inventory inventory) {
         int inventorySize = inventory.getSize();
         boolean bool = true;
-        ItemStack itemStack = bool ? fillChessBorder.get(0) : fillChessBorder.get(1);
+        ItemStack itemStack = fillChessBorder.get(0);
         int slot = 0;
 
         for (int ignored; slot < 9; slot++) {

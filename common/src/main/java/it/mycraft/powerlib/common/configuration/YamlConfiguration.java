@@ -22,14 +22,12 @@ import java.util.Map;
 @NoArgsConstructor(access = AccessLevel.PACKAGE)
 public class YamlConfiguration extends ConfigurationProvider {
 
-    private final ThreadLocal<Yaml> yaml = ThreadLocal.withInitial(() -> {
+    private Yaml newYaml() {
         DumperOptions options = new DumperOptions();
         options.setDefaultFlowStyle(DumperOptions.FlowStyle.BLOCK);
-
         YamlRepresenter representer = new YamlRepresenter(options);
-
         return new Yaml(new Constructor(new LoaderOptions()), representer, options);
-    });
+    }
 
     @Override
     public void save(Configuration config, File file) throws IOException {
@@ -40,7 +38,7 @@ public class YamlConfiguration extends ConfigurationProvider {
 
     @Override
     public void save(Configuration config, Writer writer) {
-        yaml.get().dump(config.self, writer);
+        newYaml().dump(config.self, writer);
     }
 
     @Override
@@ -63,7 +61,7 @@ public class YamlConfiguration extends ConfigurationProvider {
     @Override
     @SuppressWarnings("unchecked")
     public Configuration load(Reader reader, Configuration defaults) {
-        Map<String, Object> map = yaml.get().loadAs(reader, LinkedHashMap.class);
+        Map<String, Object> map = newYaml().loadAs(reader, LinkedHashMap.class);
         if (map == null) {
             map = new LinkedHashMap<>();
         }
@@ -78,7 +76,7 @@ public class YamlConfiguration extends ConfigurationProvider {
     @Override
     @SuppressWarnings("unchecked")
     public Configuration load(InputStream is, Configuration defaults) {
-        Map<String, Object> map = yaml.get().loadAs(is, LinkedHashMap.class);
+        Map<String, Object> map = newYaml().loadAs(is, LinkedHashMap.class);
         if (map == null) {
             map = new LinkedHashMap<>();
         }
@@ -93,7 +91,7 @@ public class YamlConfiguration extends ConfigurationProvider {
     @Override
     @SuppressWarnings("unchecked")
     public Configuration load(String string, Configuration defaults) {
-        Map<String, Object> map = yaml.get().loadAs(string, LinkedHashMap.class);
+        Map<String, Object> map = newYaml().loadAs(string, LinkedHashMap.class);
         if (map == null) {
             map = new LinkedHashMap<>();
         }

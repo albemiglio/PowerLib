@@ -9,6 +9,7 @@ import it.mycraft.powerlib.common.messaging.Framing;
 import it.mycraft.powerlib.common.messaging.MessageTransport;
 import it.mycraft.powerlib.velocity.PowerLib;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
@@ -20,7 +21,7 @@ public class VelocityMessageTransport implements MessageTransport {
     /** The shared plugin-messaging channel identifier ({@code powerlib:main}). */
     public static final ChannelIdentifier CHANNEL = MinecraftChannelIdentifier.create("powerlib", "main");
 
-    private volatile BiConsumer<String, byte[]> handler;
+    private final AtomicReference<BiConsumer<String, byte[]>> handler = new AtomicReference<>();
 
     /**
      * Registers the {@code powerlib:main} channel and subscribes this transport to plugin-message events.
@@ -50,7 +51,7 @@ public class VelocityMessageTransport implements MessageTransport {
             return;
         }
         event.setResult(PluginMessageEvent.ForwardResult.handled());
-        BiConsumer<String, byte[]> current = handler;
+        BiConsumer<String, byte[]> current = handler.get();
         if (current != null) {
             Framing.Frame frame = Framing.parse(event.getData());
             current.accept(frame.channel(), frame.data());
@@ -59,6 +60,6 @@ public class VelocityMessageTransport implements MessageTransport {
 
     @Override
     public void listen(BiConsumer<String, byte[]> handler) {
-        this.handler = handler;
+        this.handler.set(handler);
     }
 }

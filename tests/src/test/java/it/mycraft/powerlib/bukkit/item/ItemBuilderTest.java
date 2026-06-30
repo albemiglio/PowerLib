@@ -126,7 +126,7 @@ class ItemBuilderTest {
                 .setGlowing(true)
                 .setEnchantment(Enchantment.DAMAGE_ALL, 1)
                 .build();
-        assertThat(stack.getItemMeta().getItemFlags()).doesNotContain(ItemFlag.HIDE_ENCHANTS);
+        assertThat(stack.getItemMeta().getItemFlags()).isEmpty();
     }
 
     @Test

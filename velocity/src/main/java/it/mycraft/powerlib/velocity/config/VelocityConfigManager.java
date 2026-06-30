@@ -30,7 +30,7 @@ public class VelocityConfigManager extends ConfigManager {
     }
 
     private static File pluginJar(PluginDescription description) {
-        return new File(serverRoot(), description.getSource().get().toString());
+        return new File(serverRoot(), description.getSource().orElseThrow(() -> new IllegalStateException("Plugin source path is not available")).toString());
     }
 
     private static File dataFolder(PluginDescription description) {

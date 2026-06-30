@@ -9,6 +9,7 @@ import net.md_5.bungee.api.event.PluginMessageEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 
 /**
@@ -20,7 +21,7 @@ public class BungeeMessageTransport implements MessageTransport, Listener {
     /** Plugin messaging channel used for the {@code powerlib:main} link. */
     public static final String MC_CHANNEL = "powerlib:main";
 
-    private volatile BiConsumer<String, byte[]> handler;
+    private final AtomicReference<BiConsumer<String, byte[]>> handler = new AtomicReference<>();
 
     /**
      * Registers the plugin messaging channel and this listener on the proxy.
@@ -51,7 +52,7 @@ public class BungeeMessageTransport implements MessageTransport, Listener {
             return;
         }
         event.setCancelled(true);
-        BiConsumer<String, byte[]> current = handler;
+        BiConsumer<String, byte[]> current = handler.get();
         if (current != null) {
             Framing.Frame frame = Framing.parse(event.getData());
             current.accept(frame.channel(), frame.data());
@@ -60,6 +61,6 @@ public class BungeeMessageTransport implements MessageTransport, Listener {
 
     @Override
     public void listen(BiConsumer<String, byte[]> handler) {
-        this.handler = handler;
+        this.handler.set(handler);
     }
 }

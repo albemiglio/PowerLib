@@ -549,11 +549,13 @@ public class ItemBuilder implements Cloneable {
             itemStack.setItemMeta(potionMeta);
         }
 
-        if(itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
+        Optional<String> ns = itemsAdderData.getLeft();
+        Optional<String> id = itemsAdderData.getRight();
+        if (ns.isPresent() && id.isPresent()) {
             NBTItem nbtItem = new NBTItem(itemStack);
             NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
-            comp.setString("namespace", itemsAdderData.getLeft().get());
-            comp.setString("id", itemsAdderData.getRight().get());
+            comp.setString("namespace", ns.get());
+            comp.setString("id", id.get());
             nbtItem.applyNBT(itemStack);
         }
         return itemStack;

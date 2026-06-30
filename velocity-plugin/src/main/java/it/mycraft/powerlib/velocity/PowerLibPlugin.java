@@ -90,7 +90,7 @@ public class PowerLibPlugin {
         PowerLib.inject(proxy);
         this.velocityConfigManager = new VelocityConfigManager(description);
         this.velocityConfigManager.create("config.yml");
-        this.updater = new PluginUpdater(description.getVersion().get()).setGitHubURL("AlbeMiglio", "PowerLib");
+        this.updater = new PluginUpdater(description.getVersion().orElse("unknown")).setGitHubURL("AlbeMiglio", "PowerLib");
         this.checkForUpdates = getConfiguration().getBoolean("check-for-updates");
     }
 
