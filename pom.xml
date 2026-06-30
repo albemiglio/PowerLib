@@ -55,6 +55,12 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.organization>albemiglio</sonar.organization>
         <sonar.projectKey>AlbeMiglio_PowerLib</sonar.projectKey>
+        <!-- Copy-paste detection exclusions, not real duplication debt:
+             - the it.mycraft.powerlib.configuration package is a @Deprecated mirror of
+               common.configuration, kept only for backwards compatibility;
+             - the per-platform updater/scheduler/audience adapters share a shape but target
+               three different APIs (Bukkit/Bungee/Velocity) — that is the cost of multi-platform. -->
+        <sonar.cpd.exclusions>**/it/mycraft/powerlib/configuration/**,**/updater/PluginUpdater.java,**/scheduler/*Scheduler.java,**/adapters/*AudienceProvider.java</sonar.cpd.exclusions>
         <!-- The aggregated report lives in the tests module (it depends on the production modules). -->
         <sonar.coverage.jacoco.xmlReportPaths>
             ${maven.multiModuleProjectDirectory}/tests/target/site/jacoco-aggregate/jacoco.xml
