@@ -95,6 +95,12 @@
                         <goals>
                             <goal>report-aggregate</goal>
                         </goals>
+                        <configuration>
+                            <!-- All tests live in this module and exercise the production modules'
+                                 classes, so this module's own exec data holds the real coverage.
+                                 Without this it is excluded and every class reads as ~0%. -->
+                            <includeCurrentProject>true</includeCurrentProject>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
