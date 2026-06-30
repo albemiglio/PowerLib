@@ -16,16 +16,21 @@ public abstract class ConfigurationProvider {
     private static final Map<Class<? extends ConfigurationProvider>, ConfigurationProvider> providers = new HashMap<>();
 
     static {
-        try {
-            providers.put(YamlConfiguration.class, new YamlConfiguration());
-        } catch (NoClassDefFoundError ex) {
-            // Ignore, no SnakeYAML
-        }
+        // Registered by name so this base type never references its own subclasses during
+        // initialization (which can deadlock class loading); each is skipped if its backing
+        // library is absent.
+        register("it.mycraft.powerlib.configuration.YamlConfiguration"); // needs SnakeYAML
+        register("it.mycraft.powerlib.configuration.JsonConfiguration"); // needs Gson
+    }
 
+    @SuppressWarnings("unchecked")
+    private static void register(String className) {
         try {
-            providers.put(JsonConfiguration.class, new JsonConfiguration());
-        } catch (NoClassDefFoundError ex) {
-            // Ignore, no Gson
+            Class<?> clazz = Class.forName(className);
+            providers.put((Class<? extends ConfigurationProvider>) clazz,
+                    (ConfigurationProvider) clazz.getDeclaredConstructor().newInstance());
+        } catch (ReflectiveOperationException | LinkageError ex) {
+            // Ignore: the backing library (SnakeYAML / Gson) is not on the classpath.
         }
     }
 

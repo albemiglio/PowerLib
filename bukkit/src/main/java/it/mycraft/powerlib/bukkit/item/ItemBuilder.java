@@ -582,7 +582,11 @@ public class ItemBuilder implements Cloneable {
         byte[] decoded = Base64.getDecoder().decode(base64);
         String s = new String(decoded);
 
-        return s.replace("\"}}}", "").split(":\"")[1];
+        String[] parts = s.replace("\"}}}", "").split(":\"");
+        if (parts.length < 2) {
+            throw new IllegalArgumentException("Malformed skin texture base64: no URL field found");
+        }
+        return parts[1];
     }
 
     /**
