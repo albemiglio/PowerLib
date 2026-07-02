@@ -6,7 +6,7 @@
 
     <parent>
         <artifactId>powerlib</artifactId>
-        <version>1.3.2</version>
+        <version>1.3.3</version>
         <groupId>it.mycraft</groupId>
     </parent>
     <artifactId>powerlib-velocity</artifactId>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>it.mycraft</groupId>
             <artifactId>powerlib-common</artifactId>
-            <version>1.3.2</version>
+            <version>1.3.3</version>
             <exclusions>
                 <exclusion>
                     <groupId>net.kyori</groupId>
