@@ -1,4 +1,8 @@
+# PowerLib is published automatically by JitPack on every tag: request
+# com.github.albemiglio.PowerLib:powerlib-<module>:<tag> and JitPack builds it.
+# Uses the Maven wrapper (pinned 3.9.9) so JitPack's default Maven version can't
+# break the build (its bundled Maven is older than the compiler plugin needs).
 jdk:
   - openjdk17
 install:
-  - mvn -q -DskipTests -Dmaven.javadoc.skip=true install
+  - ./mvnw -q -DskipTests -Dmaven.javadoc.skip=true install
