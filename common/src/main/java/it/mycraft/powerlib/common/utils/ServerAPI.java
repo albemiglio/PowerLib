@@ -1,15 +1,16 @@
 package it.mycraft.powerlib.common.utils;
 
-import lombok.Getter;
-
 /**
  * Detects the running server platform by probing for platform-specific classes. The detected
  * {@link ServerType} is resolved once at class-load time and exposed via {@code getType()}.
  */
 public class ServerAPI {
 
-    @Getter
     private static ServerType type;
+
+    public static ServerType getType() {
+        return type;
+    }
 
     static {
         loadType();

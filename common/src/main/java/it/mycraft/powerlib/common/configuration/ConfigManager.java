@@ -77,6 +77,50 @@ public class ConfigManager {
     }
 
     /**
+     * Alias for {@link #create(String, String)} kept for plugins that want explicit default backfilling.
+     *
+     * @param file   the config file name
+     * @param source the packaged resource name to copy from
+     * @return the loaded config
+     */
+    public Configuration createAndUpdate(String file, String source) {
+        return create(file, source);
+    }
+
+    /**
+     * Same as {@link #createAndUpdate(String, String)} but the source name equals the new one.
+     *
+     * @param file the config file name
+     * @return the loaded config
+     */
+    public Configuration createAndUpdate(String file) {
+        return createAndUpdate(file, file);
+    }
+
+    /**
+     * Alias for {@link #createAndUpdate(String, String)}; options are accepted for source compatibility.
+     *
+     * @param file    the config file name
+     * @param source  the packaged resource name to copy from
+     * @param options merge options accepted by platform implementations
+     * @return the loaded config
+     */
+    public Configuration createAndUpdate(String file, String source, ConfigUpdateOptions options) {
+        return createAndUpdate(file, source);
+    }
+
+    /**
+     * Same as {@link #createAndUpdate(String, String, ConfigUpdateOptions)} but the source name equals the new one.
+     *
+     * @param file    the config file name
+     * @param options merge options accepted by platform implementations
+     * @return the loaded config
+     */
+    public Configuration createAndUpdate(String file, ConfigUpdateOptions options) {
+        return createAndUpdate(file, file, options);
+    }
+
+    /**
      * Saves the config file changes and updates it in the local map.
      *
      * @param file the config file name
