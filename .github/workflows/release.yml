@@ -1,0 +1,37 @@
+# Publishes every PowerLib module (it.mycraft:powerlib-*) to GitHub Packages on each
+# version tag — fully automatic, no manual step, using the built-in GITHUB_TOKEN.
+# Consumers resolve from https://maven.pkg.github.com/albemiglio/PowerLib.
+name: Release
+
+on:
+  push:
+    tags:
+    - '[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch: {}
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up JDK 17 (+ github server for Maven)
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        server-id: github
+        server-username: MAVEN_USERNAME
+        server-password: MAVEN_PASSWORD
+
+    - name: Deploy all modules to GitHub Packages
+      env:
+        MAVEN_USERNAME: ${{ github.actor }}
+        MAVEN_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        ./mvnw -B -ntp -DskipTests -Dmaven.javadoc.skip=true \
+          deploy -DaltDeploymentRepository=github::https://maven.pkg.github.com/albemiglio/PowerLib
