@@ -54,6 +54,50 @@ class ConfigManagerTest {
         assertEquals(2, reread.getInt("version"), "the backfilled key must be persisted to disk");
     }
 
+    @Test
+    void backfillPreservesUserCommentsAndValues(@TempDir Path tmp) throws Exception {
+        File dataFolder = new File(tmp.toFile(), "data");
+        File jar = new File(tmp.toFile(), "plugin.jar");
+        // new default introduces a top-level key (version) and a nested key (messages.quit)
+        writeJar(jar, "config.yml", ""
+                + "name: Default\n"
+                + "version: 2\n"
+                + "messages:\n"
+                + "  join: 'default join'\n"
+                + "  quit: 'default quit'\n");
+        dataFolder.mkdirs();
+        String userFile = ""
+                + "# ============================\n"
+                + "# My annotated PowerLib config\n"
+                + "# ============================\n"
+                + "name: Custom            # keep my name\n"
+                + "messages:\n"
+                + "  # shown when a player joins\n"
+                + "  join: 'Ciao %player%'\n";
+        Files.write(new File(dataFolder, "config.yml").toPath(), userFile.getBytes());
+
+        ConfigManager cm = new ConfigManager(dataFolder, jar);
+        cm.create("config.yml");
+
+        String onDisk = new String(Files.readAllBytes(new File(dataFolder, "config.yml").toPath()));
+
+        // (b) comments + blank-line formatting survive
+        assertTrue(onDisk.contains("# My annotated PowerLib config"), "header comment must survive the upgrade");
+        assertTrue(onDisk.contains("# keep my name"), "inline comment must survive");
+        assertTrue(onDisk.contains("# shown when a player joins"), "nested comment must survive");
+        // (a) user values untouched
+        assertTrue(onDisk.contains("name: Custom"), "user value must be untouched");
+        assertTrue(onDisk.contains("join: 'Ciao %player%'"), "user nested value must be untouched");
+
+        // (c) only the genuinely-missing keys are added, with default values
+        Configuration reread = ConfigurationProvider.getProvider(YamlConfiguration.class)
+                .load(new File(dataFolder, "config.yml"));
+        assertEquals("Custom", reread.getString("name"));
+        assertEquals(2, reread.getInt("version"), "missing top-level key backfilled");
+        assertEquals("Ciao %player%", reread.getString("messages.join"), "user nested value preserved");
+        assertEquals("default quit", reread.getString("messages.quit"), "missing nested key backfilled under its parent");
+    }
+
     private static void writeJar(File jar, String entry, String content) throws IOException {
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(jar))) {
             zos.putNextEntry(new ZipEntry(entry));

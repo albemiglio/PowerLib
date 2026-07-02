@@ -40,4 +40,31 @@ public final class ConfigMigration {
         }
         return changed;
     }
+
+    /**
+     * Read-only counterpart of {@link #backfill}: reports whether {@code defaults} contains any key
+     * (at any depth) missing from {@code target}, without mutating either configuration.
+     *
+     * @param target   the user's (possibly outdated) configuration
+     * @param defaults the packaged default configuration
+     * @return true if at least one default key is missing from target
+     */
+    public static boolean hasMissingKeys(Configuration target, Configuration defaults) {
+        if (target == null || defaults == null) {
+            return false;
+        }
+        for (String key : defaults.getKeys()) {
+            Object defaultValue = defaults.get(key);
+            if (defaultValue instanceof Configuration) {
+                Object targetValue = target.get(key);
+                if (!(targetValue instanceof Configuration)
+                        || hasMissingKeys((Configuration) targetValue, (Configuration) defaultValue)) {
+                    return true;
+                }
+            } else if (!target.contains(key)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

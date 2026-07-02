@@ -132,6 +132,10 @@ public class ConfigManager {
     /**
      * Adds any key present in the packaged default but missing from the user's file (e.g. after an
      * update that introduced new options), then persists the change. Existing values are untouched.
+     *
+     * <p>The change is applied to the file <b>text</b> (see {@link ConfigTextMerge}) rather than by
+     * re-dumping the in-memory model, so the user's comments, blank lines and formatting survive the
+     * upgrade. The in-memory config is then reloaded to reflect the added keys.
      */
     private void backfillFromDefault(String file, String source) {
         Configuration current = this.configs.get(file);
@@ -139,8 +143,19 @@ public class ConfigManager {
             return;
         }
         Configuration defaults = loadDefault(source);
-        if (defaults != null && ConfigMigration.backfill(current, defaults)) {
-            save(file);
+        if (defaults == null || !ConfigMigration.hasMissingKeys(current, defaults)) {
+            return;
+        }
+        File onDisk = new File(folder + File.separator + file);
+        try {
+            String userText = new String(Files.readAllBytes(onDisk.toPath()), java.nio.charset.StandardCharsets.UTF_8);
+            String merged = ConfigTextMerge.merge(userText, defaults);
+            if (!merged.equals(userText)) {
+                Files.write(onDisk.toPath(), merged.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                reload(file);
+            }
+        } catch (IOException ex) {
+            logError("backfilling", ex);
         }
     }
 
