@@ -460,10 +460,13 @@ public class ItemBuilder implements Cloneable {
             this.lore = new ArrayList<>();
         }
 
-        for (String placeholder : placeholders.keySet()) {
-            Object value = placeholders.getOrDefault(placeholder, "NULL");
-            setName(this.name.replace(placeholder, value.toString()));
-            setLore(this.lore.stream().map((s) -> s.replace(placeholder, value.toString()))
+        for (Map.Entry<String, Object> entry : placeholders.entrySet()) {
+            // getOrDefault protegge solo dalla chiave assente: se il valore mappato e' null
+            // va comunque gestito qui, altrimenti value.toString() lancia NPE.
+            Object raw = entry.getValue();
+            String value = raw != null ? raw.toString() : "NULL";
+            setName(this.name.replace(entry.getKey(), value));
+            setLore(this.lore.stream().map((s) -> s.replace(entry.getKey(), value))
                     .collect(Collectors.toList()));
         }
         String name = this.name;
