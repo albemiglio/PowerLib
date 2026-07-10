@@ -1,0 +1,47 @@
+image: maven:3-amazoncorretto-21
+
+variables:
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
+
+cache:
+  paths:
+  - .m2/repository/
+  - target/
+
+stages:
+  - build
+  - test
+  - package
+  - deploy
+
+codebuild:
+  tags:
+  - jdk21
+  stage: build
+  script:
+  - mvn $MAVEN_CLI_OPTS compile
+
+codetest:
+  tags:
+  - jdk21
+  stage: test
+  script:
+  - mvn $MAVEN_CLI_OPTS test
+
+codepackage:
+  tags:
+  - jdk21
+  stage: package
+  script:
+  - mvn $MAVEN_CLI_OPTS package -DskipTests
+
+codedeploy:
+  tags:
+  - jdk21
+  stage: deploy
+  only:
+  - master
+  script:
+  - mvn $MAVEN_CLI_OPTS deploy -Dmaven.test.skip=true
+  - echo "Deployed powerlib to Novaverse Nexus"

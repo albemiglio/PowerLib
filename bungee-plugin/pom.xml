@@ -5,7 +5,7 @@
     <parent>
         <artifactId>powerlib</artifactId>
         <groupId>it.mycraft</groupId>
-        <version>1.2.16-SNAPSHOT</version>
+        <version>1.2.17-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -46,7 +46,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.6.0</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -77,9 +77,10 @@
     </build>
 
     <repositories>
+        <!-- net.md-5:bungeecord-api e' servito da repo.papermc.io (oss.sonatype.org dismesso) -->
         <repository>
-            <id>bungeecord-repo</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+            <id>paper</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
     </repositories>
 
@@ -99,7 +100,8 @@
         <dependency>
             <groupId>net.md-5</groupId>
             <artifactId>bungeecord-api</artifactId>
-            <version>1.20-R0.2-SNAPSHOT</version>
+            <!-- release su repo.papermc.io; lo snapshot e' stato purgato (vedi build-outliers.md) -->
+            <version>1.20-R0.2</version>
             <type>jar</type>
             <scope>provided</scope>
         </dependency>

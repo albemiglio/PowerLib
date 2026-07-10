@@ -7,7 +7,7 @@
     <groupId>it.mycraft</groupId>
     <artifactId>powerlib</artifactId>
     <packaging>pom</packaging>
-    <version>1.2.16-SNAPSHOT</version>
+    <version>1.2.17-SNAPSHOT</version>
     <licenses>
         <license>
             <name>MIT License</name>
@@ -28,17 +28,17 @@
 
     <distributionManagement>
         <repository>
-            <id>codemc-releases</id>
-            <url>https://repo.codemc.io/repository/maven-releases/</url>
+            <id>novaverse-releases</id>
+            <url>https://repo.novaverse.it/repository/maven-releases/</url>
         </repository>
         <snapshotRepository>
-            <id>codemc-snapshots</id>
-            <url>https://repo.codemc.io/repository/maven-snapshots/</url>
+            <id>novaverse-snapshots</id>
+            <url>https://repo.novaverse.it/repository/maven-snapshots/</url>
         </snapshotRepository>
     </distributionManagement>
 
     <properties>
-        <java.version>16</java.version>
+        <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
