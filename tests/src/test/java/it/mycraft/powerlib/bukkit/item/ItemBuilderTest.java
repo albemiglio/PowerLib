@@ -244,4 +244,20 @@ class ItemBuilderTest {
         assertThat(first.getType()).isEqualTo(second.getType());
         assertThat(second.getItemMeta().getDisplayName()).isEqualTo("Repeat");
     }
+
+    @Test
+    void nullPlaceholderValueRendersAsSentinelWithoutThrowing() {
+        // Regression: a placeholder key present with a null value (e.g. OfflinePlayer#getName())
+        // used to NPE in build(), because getOrDefault only guards the absent-key case.
+        ItemStack stack = new ItemBuilder()
+                .setMaterial(Material.PAPER)
+                .setName("Owner: %owner%")
+                .setLore("Holder: %owner%")
+                .addPlaceHolder("%owner%", null)
+                .build();
+
+        ItemMeta meta = stack.getItemMeta();
+        assertThat(meta.getDisplayName()).isEqualTo("Owner: NULL");
+        assertThat(meta.getLore()).containsExactly("Holder: NULL");
+    }
 }
