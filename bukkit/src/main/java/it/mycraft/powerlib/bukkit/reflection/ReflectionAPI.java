@@ -7,7 +7,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Constructor;
-import java.util.logging.Level;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class ReflectionAPI {
 
@@ -15,13 +16,13 @@ public class ReflectionAPI {
      * Returns The package-name of the NMS version
      */
     @Getter
-    private static final String version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+    private static final String version = resolveCraftBukkitVersion();
 
     /**
      * Returns The server's numerical version
      */
     @Getter
-    private static final int numericalVersion = Integer.parseInt(version.split("_")[1]);
+    private static final int numericalVersion = resolveNumericalVersion(version);
 
     /**
      * @param name The path of a 'net.minecraft.server.v1_X_RX.' class
@@ -29,7 +30,10 @@ public class ReflectionAPI {
      */
     public static Class<?> getNMSClass(String name) {
         try {
-            return Class.forName("net.minecraft.server." + version + "." + name);
+            if (!version.isBlank()) {
+                return Class.forName("net.minecraft.server." + version + "." + name);
+            }
+            return Class.forName("net.minecraft.server." + name);
         } catch (ClassNotFoundException ex) {
             new Message("Error while finding a " + name + " NMS Class!", ex.getMessage()).sendConsole();
             return null;
@@ -55,7 +59,10 @@ public class ReflectionAPI {
      */
     public static Class<?> getOBCClass(String name) {
         try {
-            return Class.forName("org.bukkit.craftbukkit." + version + "." + name);
+            if (!version.isBlank()) {
+                return Class.forName("org.bukkit.craftbukkit." + version + "." + name);
+            }
+            return Class.forName("org.bukkit.craftbukkit." + name);
         } catch (ClassNotFoundException ex) {
             new Message("Error while finding a " + name + " OBC Class!", ex.getMessage()).sendConsole();
             return null;
@@ -128,6 +135,38 @@ public class ReflectionAPI {
                     .invoke(playerConnection, packet);
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static String resolveCraftBukkitVersion() {
+        String packageName = Bukkit.getServer().getClass().getPackage().getName();
+        String[] parts = packageName.split("\\.");
+        if (parts.length > 3 && parts[3].matches("v\\d+_\\d+_R\\d+")) {
+            return parts[3];
+        }
+        return "";
+    }
+
+    private static int resolveNumericalVersion(String craftBukkitVersion) {
+        if (craftBukkitVersion != null && craftBukkitVersion.matches("v\\d+_\\d+_R\\d+")) {
+            String[] parts = craftBukkitVersion.split("_");
+            if (parts.length >= 2) {
+                return parseInt(parts[1], 0);
+            }
+        }
+
+        Matcher matcher = Pattern.compile("(\\d+)\\.(\\d+)").matcher(Bukkit.getBukkitVersion());
+        if (matcher.find()) {
+            return parseInt(matcher.group(2), 0);
+        }
+        return 0;
+    }
+
+    private static int parseInt(String value, int fallback) {
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException ignored) {
+            return fallback;
         }
     }
 }

@@ -3,8 +3,8 @@ package it.mycraft.powerlib.bukkit.item;
 import com.google.common.base.Enums;
 import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
-import de.tr7zw.changeme.nbtapi.NBTCompound;
-import de.tr7zw.changeme.nbtapi.NBTItem;
+import de.tr7zw.changeme.nbtapi.NBT;
+import de.tr7zw.changeme.nbtapi.iface.ReadWriteNBT;
 import dev.lone.itemsadder.api.CustomStack;
 import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
@@ -19,6 +19,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -395,10 +396,37 @@ public class ItemBuilder implements Cloneable {
         amount = 1;
         metadata = (short) 3;
 
-        SkullMeta skullMeta = (SkullMeta) new ItemStack(Material.getMaterial(material)).getItemMeta();
-        skullMeta.setOwningPlayer(Bukkit.getOfflinePlayer(uuid));
-        this.skullMeta = skullMeta;
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(uuid);
+        if (offlinePlayer != null) {
+            SkullMeta skullMeta = (SkullMeta) new ItemStack(Material.getMaterial(material)).getItemMeta();
+            applyOwner(skullMeta, offlinePlayer);
+            this.skullMeta = skullMeta;
+        }
         return this;
+    }
+
+    /**
+     * Applies a player's skin to the skull so it also renders when the player is offline.
+     * On Paper the textured profile is pulled from the local server cache and embedded into
+     * the item; on non-Paper platforms (or if anything fails) it falls back to the plain
+     * {@link SkullMeta#setOwningPlayer(org.bukkit.OfflinePlayer)} behaviour.
+     */
+    private static void applyOwner(SkullMeta skullMeta, org.bukkit.OfflinePlayer offlinePlayer) {
+        try {
+            Object profile = offlinePlayer.getClass().getMethod("getPlayerProfile").invoke(offlinePlayer);
+            try {
+                // PlayerProfile#completeFromCache(): no network, fills cached textures
+                profile.getClass().getMethod("completeFromCache").invoke(profile);
+            } catch (NoSuchMethodException ignored) {
+                // older Paper without completeFromCache(): keep whatever the profile already has
+            }
+            skullMeta.getClass()
+                    .getMethod("setPlayerProfile", Class.forName("com.destroystokyo.paper.profile.PlayerProfile"))
+                    .invoke(skullMeta, profile);
+        } catch (ReflectiveOperationException | LinkageError notPaper) {
+            // piattaforma non-Paper o profile API assente: fallback standard
+            skullMeta.setOwningPlayer(offlinePlayer);
+        }
     }
 
     /**
@@ -500,6 +528,10 @@ public class ItemBuilder implements Cloneable {
 
         ItemMeta itemMeta = itemStack.getItemMeta();
         if (itemMeta != null) {
+            if (skullMeta != null && itemStack.getType() == Material.PLAYER_HEAD) {
+                itemMeta = skullMeta;
+            }
+
             if (name != null && !name.isEmpty()) {
                 itemMeta.setDisplayName(name);
             }
@@ -541,13 +573,11 @@ public class ItemBuilder implements Cloneable {
 
         if (itemsAdderData.getLeft().isPresent() && itemsAdderData.getRight().isPresent()) {
             try {
-                // Apply ItemsAdder NBT in a safe way if possible, or just skip if it's already an ItemsAdder item
-                // Recent ItemsAdder versions might already have this from the initial construction
-                NBTItem nbtItem = new NBTItem(itemStack);
-                NBTCompound comp = nbtItem.getOrCreateCompound("itemsadder");
-                comp.setString("namespace", itemsAdderData.getLeft().get());
-                comp.setString("id", itemsAdderData.getRight().get());
-                nbtItem.applyNBT(itemStack);
+                NBT.modify(itemStack, nbt -> {
+                    ReadWriteNBT comp = nbt.getOrCreateCompound("itemsadder");
+                    comp.setString("namespace", itemsAdderData.getLeft().get());
+                    comp.setString("id", itemsAdderData.getRight().get());
+                });
             } catch (Exception e) {
                 Bukkit.getLogger().warning("Failed to apply ItemsAdder NBT: " + e.getMessage());
             }
@@ -589,7 +619,17 @@ public class ItemBuilder implements Cloneable {
      * @return The ItemStack
      */
     public ItemBuilder setPlayerHead(String playerName) {
-        return setPlayerSkin(Bukkit.getOfflinePlayer(playerName).getUniqueId());
+        org.bukkit.OfflinePlayer offlinePlayer = Bukkit.getOfflinePlayer(playerName);
+        if (offlinePlayer != null) {
+            int version = ReflectionAPI.getNumericalVersion();
+            material = version >= 13 ? "PLAYER_HEAD" : "SKULL_ITEM";
+            amount = 1;
+            metadata = (short) 3;
+            SkullMeta skullMeta = (SkullMeta) new ItemStack(Material.getMaterial(material)).getItemMeta();
+            applyOwner(skullMeta, offlinePlayer);
+            this.skullMeta = skullMeta;
+        }
+        return this;
     }
 
     /**

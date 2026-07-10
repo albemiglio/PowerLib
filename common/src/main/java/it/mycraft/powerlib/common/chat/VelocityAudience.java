@@ -7,7 +7,7 @@ public class VelocityAudience extends PlatformAudience {
             String packageName = VelocityAudience.class.getPackage().getName();
             String adapterPackage = packageName.replace(".common.chat", ".velocity.adapters");
             audienceAdapterClass = Class.forName(adapterPackage + ".AudienceAdapter");
-            commandSenderClass = Class.forName("com.velocitypowered.api.proxy.ProxyServer");
+            commandSenderClass = Class.forName("com.velocitypowered.api.command.CommandSource");
         } catch (ClassNotFoundException e) {
             sendError();
         }
