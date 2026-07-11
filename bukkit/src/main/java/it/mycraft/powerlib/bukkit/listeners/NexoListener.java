@@ -1,23 +1,27 @@
 package it.mycraft.powerlib.bukkit.listeners;
 
+import it.mycraft.powerlib.bukkit.events.NexoFurnitureBreakEvent;
 import it.mycraft.powerlib.bukkit.events.NexoFurnitureInteractEvent;
 import it.mycraft.powerlib.bukkit.utils.NexoUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.plugin.Plugin;
 
 /**
- * Detects right-click interactions with Nexo furniture / custom blocks (via {@link NexoUtils}) and
- * re-fires them as a dependency-free {@link NexoFurnitureInteractEvent}. Registered only when Nexo is
- * present, via {@link #register(Plugin)}.
+ * Detects interactions with Nexo furniture / custom blocks (via {@link NexoUtils}) and re-fires them as
+ * dependency-free {@link NexoFurnitureInteractEvent} / {@link NexoFurnitureBreakEvent}. Registered only
+ * when Nexo is present, via {@link #register(Plugin)}.
  */
 public final class NexoListener implements Listener {
 
@@ -65,11 +69,48 @@ public final class NexoListener implements Listener {
         fire(event.getPlayer(), NexoUtils.getNexoId(event.getRightClicked()), event.getRightClicked(), event);
     }
 
+    /**
+     * Re-fires the breaking of a Nexo custom block (or a furniture's barrier hitbox) as a
+     * {@link NexoFurnitureBreakEvent}.
+     *
+     * @param event the originating block break event
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onBlockBreak(BlockBreakEvent event) {
+        fireBreak(event.getPlayer(), NexoUtils.getNexoId(event.getBlock()), event.getBlock(), event);
+    }
+
+    /**
+     * Re-fires a player breaking a Nexo furniture entity as a {@link NexoFurnitureBreakEvent}. Furniture
+     * is removed by damaging its entity, so the player's hit is the break signal.
+     *
+     * @param event the originating damage event
+     */
+    @EventHandler(priority = EventPriority.NORMAL)
+    public void onEntityBreak(EntityDamageByEntityEvent event) {
+        if (!(event.getDamager() instanceof Player player)) {
+            return;
+        }
+        Entity furniture = event.getEntity();
+        fireBreak(player, NexoUtils.getNexoId(furniture), furniture, event);
+    }
+
     private void fire(Player player, String furnitureId, Object nexoFurniture, Cancellable source) {
         if (furnitureId == null || furnitureId.isEmpty()) {
             return;
         }
         NexoFurnitureInteractEvent event = new NexoFurnitureInteractEvent(player, furnitureId, nexoFurniture);
+        Bukkit.getPluginManager().callEvent(event);
+        if (event.isCancelled()) {
+            source.setCancelled(true);
+        }
+    }
+
+    private void fireBreak(Player player, String furnitureId, Object nexoFurniture, Cancellable source) {
+        if (furnitureId == null || furnitureId.isEmpty()) {
+            return;
+        }
+        NexoFurnitureBreakEvent event = new NexoFurnitureBreakEvent(player, furnitureId, nexoFurniture);
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) {
             source.setCancelled(true);
