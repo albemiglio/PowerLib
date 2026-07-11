@@ -114,7 +114,7 @@ public class ItemBuilder implements Cloneable {
      * @return The ItemBuilder
      */
     public ItemBuilder setMaterial(String material) {
-        if (material.length() > 11 && !material.startsWith("itemsadder:")) {
+        if (material.length() > 11 && !material.startsWith("itemsadder:") && !material.startsWith("nexo:")) {
             Optional<Material> optMaterial = Enums.getIfPresent(Material.class, material).toJavaUtil();
             if (optMaterial.isPresent())
                 this.material = optMaterial.get().toString();
@@ -531,6 +531,13 @@ public class ItemBuilder implements Cloneable {
 
             if (customModelData != 0) {
                 itemMeta.setCustomModelData(customModelData);
+            }
+
+            // A skull owner set via setPlayerHead survives only if the final material really is a head:
+            // a later setMaterial() may have moved this builder off PLAYER_HEAD, in which case the owner
+            // is simply dropped.
+            if (skullMeta != null && itemMeta instanceof SkullMeta skull) {
+                skull.setOwningPlayer(skullMeta.getOwningPlayer());
             }
 
             for (Map.Entry<NamespacedKey, Pair<PersistentDataType, Object>> entry : persistentData.entrySet()) {
