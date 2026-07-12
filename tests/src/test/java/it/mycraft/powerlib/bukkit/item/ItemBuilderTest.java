@@ -3,11 +3,13 @@ package it.mycraft.powerlib.bukkit.item;
 import be.seeseemelk.mockbukkit.MockBukkit;
 import org.bukkit.Color;
 import org.bukkit.Material;
+import org.bukkit.OfflinePlayer;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.LeatherArmorMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,6 +78,46 @@ class ItemBuilderTest {
     void setMaterialFromInvalidStringFallsBackToStone() {
         ItemStack stack = new ItemBuilder().setMaterial("NOT_A_REAL_MATERIAL_NAME").build();
         assertThat(stack.getType()).isEqualTo(Material.STONE);
+    }
+
+    @Test
+    void nexoMaterialStringIsKeptVerbatimAndResolvedAtBuildTime() {
+        // Regression: "nexo:<id>" is longer than 11 chars and is not a Material constant, so the
+        // enum-normalisation branch used to drop it and build() fell back to STONE. The prefix must
+        // survive setMaterial and reach build(), which (with Nexo absent here) yields the BARRIER
+        // fallback rather than a silent stone.
+        ItemBuilder builder = new ItemBuilder().setMaterial("nexo:badge_card");
+        assertThat(builder.getMaterial()).isEqualTo("nexo:badge_card");
+        assertThat(builder.build().getType()).isEqualTo(Material.BARRIER);
+    }
+
+    @Test
+    void playerHeadKeepsItsOwner() {
+        // Regression: setPlayerHead stored the owner on an internal SkullMeta that build() never
+        // read, so every head came out ownerless.
+        OfflinePlayer owner = MockBukkit.getMock().addPlayer("Notch");
+        ItemStack stack = new ItemBuilder().setPlayerHead(owner.getUniqueId()).build();
+
+        assertThat(stack.getType()).isEqualTo(Material.PLAYER_HEAD);
+        // MockBukkit's SkullMeta only round-trips the owner's name (it re-derives an offline UUID on
+        // read), so the identity is asserted by name; what matters here is that an owner survives at all.
+        OfflinePlayer applied = ((SkullMeta) stack.getItemMeta()).getOwningPlayer();
+        assertThat(applied).isNotNull();
+        assertThat(applied.getName()).isEqualTo("Notch");
+    }
+
+    @Test
+    void playerHeadOwnerIsDroppedWhenTheMaterialIsMovedOffHead() {
+        // The owner is copied back only when the final item really is a head: switching the material
+        // after setPlayerHead must yield that plain material with no skull owner and no crash.
+        OfflinePlayer owner = MockBukkit.getMock().addPlayer("Notch");
+        ItemStack stack = new ItemBuilder()
+                .setPlayerHead(owner.getUniqueId())
+                .setMaterial(Material.STONE)
+                .build();
+
+        assertThat(stack.getType()).isEqualTo(Material.STONE);
+        assertThat(stack.getItemMeta()).isNotInstanceOf(SkullMeta.class);
     }
 
     @Test
