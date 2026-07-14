@@ -12,6 +12,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -96,6 +97,41 @@ class ConfigManagerTest {
         assertEquals(2, reread.getInt("version"), "missing top-level key backfilled");
         assertEquals("Ciao %player%", reread.getString("messages.join"), "user nested value preserved");
         assertEquals("default quit", reread.getString("messages.quit"), "missing nested key backfilled under its parent");
+    }
+
+    @Test
+    void createWithoutBackfillKeepsRemovedKeysRemoved(@TempDir Path tmp) throws Exception {
+        File dataFolder = new File(tmp.toFile(), "data");
+        File jar = new File(tmp.toFile(), "plugin.jar");
+        writeJar(jar, "gui.yml", "items:\n  confirm:\n    material: BOOK\n  close:\n    material: BARRIER\n");
+        dataFolder.mkdirs();
+        // the user deleted the "close" item on purpose: it must stay deleted
+        Files.write(new File(dataFolder, "gui.yml").toPath(),
+                "items:\n  confirm:\n    material: BOOK\n".getBytes());
+
+        ConfigManager cm = new ConfigManager(dataFolder, jar);
+        Configuration cfg = cm.create("gui.yml", false);
+
+        assertFalse(cfg.contains("items.close"), "a key removed by the user must not be backfilled");
+
+        Configuration reread = ConfigurationProvider.getProvider(YamlConfiguration.class)
+                .load(new File(dataFolder, "gui.yml"));
+        assertFalse(reread.contains("items.close"), "the file on disk must not be rewritten");
+        assertEquals("BOOK", reread.getString("items.confirm.material"), "the remaining items must be untouched");
+    }
+
+    @Test
+    void createWithoutBackfillStillCopiesTheDefaultWhenTheFileIsMissing(@TempDir Path tmp) throws Exception {
+        File dataFolder = new File(tmp.toFile(), "data");
+        File jar = new File(tmp.toFile(), "plugin.jar");
+        writeJar(jar, "gui.yml", "items:\n  confirm:\n    material: BOOK\n");
+
+        ConfigManager cm = new ConfigManager(dataFolder, jar);
+        Configuration cfg = cm.create("gui.yml", false);
+
+        assertEquals("BOOK", cfg.getString("items.confirm.material"),
+                "a first install must still get the packaged default");
+        assertTrue(new File(dataFolder, "gui.yml").exists());
     }
 
     private static void writeJar(File jar, String entry, String content) throws IOException {
