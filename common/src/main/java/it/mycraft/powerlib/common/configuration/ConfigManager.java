@@ -75,7 +75,7 @@ public class ConfigManager {
      * Creates the config from a packaged default (if missing), loads it and caches it, optionally
      * backfilling the keys that the packaged default has and the file on disk lacks.
      * <p>
-     * Pass {@code false} for files whose entries the user is meant to be able to <i>remove</i> (a GUI
+     * Pass {@code false} for files whose entries the user is meant to be able to <i>remove</i> (a
      * layout, a list of modules): with the backfill on, a deleted key is restored from the packaged
      * default on the next load, so removing an entry by hand is impossible.
      *
