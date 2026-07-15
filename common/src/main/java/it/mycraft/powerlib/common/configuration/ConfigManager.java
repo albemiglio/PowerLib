@@ -51,19 +51,14 @@ public class ConfigManager {
 
     /**
      * Creates the config from a packaged default (if missing), loads it and caches it.
+     * Keys added to the packaged default since the file was written are backfilled into it.
      *
      * @param file   the config file name
      * @param source the packaged resource name to copy from
      * @return the loaded config
      */
     public Configuration create(String file, String source) {
-        File resourcePath = new File(folder + File.separator + file);
-        if (!resourcePath.exists()) {
-            createYAML(file, source, false);
-        }
-        reload(file);
-        backfillFromDefault(file, source);
-        return this.configs.get(file);
+        return create(file, source, true);
     }
 
     /**
@@ -74,6 +69,42 @@ public class ConfigManager {
      */
     public Configuration create(String file) {
         return create(file, file);
+    }
+
+    /**
+     * Creates the config from a packaged default (if missing), loads it and caches it, optionally
+     * backfilling the keys that the packaged default has and the file on disk lacks.
+     * <p>
+     * Pass {@code false} for files whose entries the user is meant to be able to <i>remove</i> (a GUI
+     * layout, a list of modules): with the backfill on, a deleted key is restored from the packaged
+     * default on the next load, so removing an entry by hand is impossible.
+     *
+     * @param file     the config file name
+     * @param source   the packaged resource name to copy from
+     * @param backfill whether missing default keys are added back to the file on disk
+     * @return the loaded config
+     */
+    public Configuration create(String file, String source, boolean backfill) {
+        File resourcePath = new File(folder + File.separator + file);
+        if (!resourcePath.exists()) {
+            createYAML(file, source, false);
+        }
+        reload(file);
+        if (backfill) {
+            backfillFromDefault(file, source);
+        }
+        return this.configs.get(file);
+    }
+
+    /**
+     * Same as {@link #create(String, String, boolean)} but the source name equals the new one.
+     *
+     * @param file     the config file name
+     * @param backfill whether missing default keys are added back to the file on disk
+     * @return the loaded config
+     */
+    public Configuration create(String file, boolean backfill) {
+        return create(file, file, backfill);
     }
 
     /**
