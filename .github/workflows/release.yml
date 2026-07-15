@@ -1,5 +1,7 @@
 # Publishes every PowerLib module (it.mycraft:powerlib-*) to GitHub Packages on each
-# version tag — fully automatic, no manual step, using the built-in GITHUB_TOKEN.
+# version tag — fully automatic, no manual step, using the built-in GITHUB_TOKEN. The
+# published version is taken from the tag (tag 1.3.7 -> artifacts 1.3.7), so no pom edit
+# is needed to cut a release: just push a X.Y.Z tag.
 # Consumers resolve from https://maven.pkg.github.com/albemiglio/PowerLib.
 name: Release
 
@@ -27,6 +29,13 @@ jobs:
         server-id: github
         server-username: MAVEN_USERNAME
         server-password: MAVEN_PASSWORD
+
+    - name: Set the version from the tag
+      if: github.ref_type == 'tag'
+      run: >-
+        ./mvnw -B -ntp versions:set
+        -DnewVersion=${{ github.ref_name }}
+        -DprocessAllModules -DgenerateBackupPoms=false
 
     - name: Deploy all modules to GitHub Packages
       env:
