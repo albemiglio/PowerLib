@@ -2,7 +2,10 @@
 # version tag — fully automatic, no manual step, using the built-in GITHUB_TOKEN. The
 # published version is taken from the tag (tag 1.3.7 -> artifacts 1.3.7), so no pom edit
 # is needed to cut a release: just push a X.Y.Z tag.
-# Consumers resolve from https://maven.pkg.github.com/albemiglio/PowerLib.
+# Consumers resolve from https://maven.pkg.github.com/albemiglio/PowerLib and, for the
+# Novaverse plugins, from https://repo.novaverse.it (second deploy below; it no-ops until
+# the NEXUS_REPO_USER / NEXUS_REPO_PASS secrets exist).
+# CodeMC is NOT published from here: it is a separate Jenkins job that builds the repo.
 name: Release
 
 on:
@@ -44,3 +47,27 @@ jobs:
       run: |
         ./mvnw -B -ntp -DskipTests -Dmaven.javadoc.skip=true \
           deploy -DaltDeploymentRepository=github::https://maven.pkg.github.com/albemiglio/PowerLib
+
+    # Second server: setup-java writes settings.xml for one server-id at a time, so the
+    # github one above is regenerated here for the Nexus deploy.
+    - name: Set up Maven server for Nexus Novaverse
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        server-id: novaverse-releases
+        server-username: NEXUS_USERNAME
+        server-password: NEXUS_PASSWORD
+
+    - name: Deploy all modules to Nexus Novaverse
+      env:
+        NEXUS_USERNAME: ${{ secrets.NEXUS_REPO_USER }}
+        NEXUS_PASSWORD: ${{ secrets.NEXUS_REPO_PASS }}
+      run: |
+        if [ -z "$NEXUS_USERNAME" ]; then
+          echo "NEXUS_REPO_USER not set - skipping the Nexus Novaverse deploy."
+          exit 0
+        fi
+        ./mvnw -B -ntp -DskipTests -Dmaven.javadoc.skip=true \
+          deploy -DaltDeploymentRepository=novaverse-releases::https://repo.novaverse.it/repository/maven-releases/
