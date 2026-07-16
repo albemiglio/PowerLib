@@ -1,13 +1,13 @@
 image: maven:3-amazoncorretto-21
 
 variables:
-  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode"
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode -U"
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository"
 
 cache:
+  key: "$CI_COMMIT_REF_SLUG"
   paths:
   - .m2/repository/
-  - target/
 
 stages:
   - build
