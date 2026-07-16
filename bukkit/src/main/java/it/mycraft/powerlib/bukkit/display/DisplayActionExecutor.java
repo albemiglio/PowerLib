@@ -6,7 +6,7 @@ import org.bukkit.entity.Player;
 import java.util.Map;
 
 /**
- * Executes the common display actions used by Novaverse-style YAML modules.
+ * Executes the common display actions used by YAML-configured modules.
  */
 public final class DisplayActionExecutor {
 
