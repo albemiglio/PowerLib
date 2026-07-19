@@ -2,11 +2,15 @@ package it.mycraft.powerlib.bukkit.listeners;
 
 import it.mycraft.powerlib.bukkit.events.NexoFurnitureBreakEvent;
 import it.mycraft.powerlib.bukkit.events.NexoFurnitureInteractEvent;
+import it.mycraft.powerlib.bukkit.events.NexoFurniturePlaceEvent;
 import it.mycraft.powerlib.bukkit.utils.NexoUtils;
 import org.bukkit.Bukkit;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
+import org.bukkit.event.Event;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -16,14 +20,32 @@ import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.Plugin;
 
+import java.lang.reflect.Method;
+import java.util.function.Consumer;
+import java.util.logging.Level;
+
 /**
- * Detects interactions with Nexo furniture / custom blocks (via {@link NexoUtils}) and re-fires them as
- * dependency-free {@link NexoFurnitureInteractEvent} / {@link NexoFurnitureBreakEvent}. Registered only
- * when Nexo is present, via {@link #register(Plugin)}.
+ * Detects interactions with Nexo furniture / custom blocks and re-fires them as dependency-free
+ * {@link NexoFurnitureInteractEvent} / {@link NexoFurnitureBreakEvent}. Registered only when Nexo is
+ * present, via {@link #register(Plugin)}.
+ * <p>
+ * Two detection paths are used. When Nexo exposes its own furniture events they are hooked reflectively
+ * and preferred: Nexo resolves the furniture mechanic itself, so the id is reliable even though the
+ * clickable part of a furniture is an interaction entity or a barrier hitbox rather than the base entity.
+ * The Bukkit path ({@link NexoUtils}) stays registered as a fallback and keeps serving Nexo custom blocks,
+ * which the native furniture events do not cover.
  */
 public final class NexoListener implements Listener {
+
+    private static final String NATIVE_INTERACT_EVENT = "com.nexomc.nexo.api.events.furniture.NexoFurnitureInteractEvent";
+    private static final String NATIVE_BREAK_EVENT = "com.nexomc.nexo.api.events.furniture.NexoFurnitureBreakEvent";
+    private static final String NATIVE_PLACE_EVENT = "com.nexomc.nexo.api.events.furniture.NexoFurniturePlaceEvent";
+
+    private boolean nativeInteractHooked;
+    private boolean nativeBreakHooked;
 
     private NexoListener() {
     }
@@ -37,7 +59,13 @@ public final class NexoListener implements Listener {
         if (!NexoUtils.isAvailable()) {
             return;
         }
-        Bukkit.getPluginManager().registerEvents(new NexoListener(), plugin);
+        NexoListener listener = new NexoListener();
+        listener.nativeInteractHooked =
+                listener.hookNative(plugin, NATIVE_INTERACT_EVENT, listener::handleNativeInteract);
+        listener.nativeBreakHooked =
+                listener.hookNative(plugin, NATIVE_BREAK_EVENT, listener::handleNativeBreak);
+        listener.hookNative(plugin, NATIVE_PLACE_EVENT, listener::handleNativePlace);
+        Bukkit.getPluginManager().registerEvents(listener, plugin);
         plugin.getLogger().info("[PowerLib] Nexo furniture bridge enabled.");
     }
 
@@ -95,8 +123,103 @@ public final class NexoListener implements Listener {
         fireBreak(player, NexoUtils.getNexoId(furniture), furniture, event);
     }
 
+    /**
+     * Hooks a Nexo event by name, so PowerLib keeps compiling and running without Nexo on the classpath.
+     *
+     * @return whether the event was found and hooked
+     */
+    @SuppressWarnings("unchecked")
+    private boolean hookNative(Plugin plugin, String className, Consumer<Event> handler) {
+        try {
+            Class<?> nativeEvent = Class.forName(className);
+            if (!Event.class.isAssignableFrom(nativeEvent)) {
+                return false;
+            }
+            Bukkit.getPluginManager().registerEvent(
+                    (Class<? extends Event>) nativeEvent,
+                    this,
+                    EventPriority.NORMAL,
+                    (listener, event) -> {
+                        if (nativeEvent.isInstance(event)) {
+                            handler.accept(event);
+                        }
+                    },
+                    plugin,
+                    true
+            );
+            return true;
+        } catch (ClassNotFoundException absent) {
+            // Older Nexo builds without the furniture events: the Bukkit fallback below stays in charge.
+            return false;
+        } catch (Exception ex) {
+            plugin.getLogger().log(Level.WARNING, "[PowerLib] Could not hook the native Nexo event " + className, ex);
+            return false;
+        }
+    }
+
+    private void handleNativeInteract(Event event) {
+        EquipmentSlot hand = invoke(event, "getHand", EquipmentSlot.class);
+        if (hand != null && hand != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = invoke(event, "getPlayer", Player.class);
+        Object baseEntity = invoke(event, "getBaseEntity", Object.class);
+        String furnitureId = furnitureId(event);
+        if (player == null || baseEntity == null || furnitureId == null) {
+            return;
+        }
+
+        NexoFurnitureInteractEvent bridged = new NexoFurnitureInteractEvent(player, furnitureId, baseEntity);
+        Bukkit.getPluginManager().callEvent(bridged);
+        if (!bridged.isCancelled()) {
+            return;
+        }
+        if (event instanceof Cancellable cancellable) {
+            cancellable.setCancelled(true);
+        }
+        // Nexo decides what to do with an interaction through these results, not only through cancellation.
+        setResult(event, "setUseFurniture", Result.DENY);
+        setResult(event, "setUseItemInHand", Result.DENY);
+        setResult(event, "setCanRunAction", Result.DENY);
+    }
+
+    private void handleNativePlace(Event event) {
+        EquipmentSlot hand = invoke(event, "getHand", EquipmentSlot.class);
+        if (hand != null && hand != EquipmentSlot.HAND) {
+            return;
+        }
+        Player player = invoke(event, "getPlayer", Player.class);
+        Object baseEntity = invoke(event, "getBaseEntity", Object.class);
+        String furnitureId = furnitureId(event);
+        if (player == null || baseEntity == null || furnitureId == null) {
+            return;
+        }
+
+        NexoFurniturePlaceEvent bridged = new NexoFurniturePlaceEvent(player, furnitureId, baseEntity,
+                invoke(event, "getBlock", Block.class), invoke(event, "getItemInHand", ItemStack.class), hand);
+        Bukkit.getPluginManager().callEvent(bridged);
+        if (bridged.isCancelled() && event instanceof Cancellable cancellable) {
+            cancellable.setCancelled(true);
+        }
+    }
+
+    private void handleNativeBreak(Event event) {
+        Player player = invoke(event, "getPlayer", Player.class);
+        Object baseEntity = invoke(event, "getBaseEntity", Object.class);
+        String furnitureId = furnitureId(event);
+        if (player == null || baseEntity == null || furnitureId == null) {
+            return;
+        }
+
+        NexoFurnitureBreakEvent bridged = new NexoFurnitureBreakEvent(player, furnitureId, baseEntity);
+        Bukkit.getPluginManager().callEvent(bridged);
+        if (bridged.isCancelled() && event instanceof Cancellable cancellable) {
+            cancellable.setCancelled(true);
+        }
+    }
+
     private void fire(Player player, String furnitureId, Object nexoFurniture, Cancellable source) {
-        if (furnitureId == null || furnitureId.isEmpty()) {
+        if (skip(furnitureId, nativeInteractHooked)) {
             return;
         }
         NexoFurnitureInteractEvent event = new NexoFurnitureInteractEvent(player, furnitureId, nexoFurniture);
@@ -107,13 +230,53 @@ public final class NexoListener implements Listener {
     }
 
     private void fireBreak(Player player, String furnitureId, Object nexoFurniture, Cancellable source) {
-        if (furnitureId == null || furnitureId.isEmpty()) {
+        if (skip(furnitureId, nativeBreakHooked)) {
             return;
         }
         NexoFurnitureBreakEvent event = new NexoFurnitureBreakEvent(player, furnitureId, nexoFurniture);
         Bukkit.getPluginManager().callEvent(event);
         if (event.isCancelled()) {
             source.setCancelled(true);
+        }
+    }
+
+    /**
+     * Whether the Bukkit fallback must stand down: the native hook already bridged this furniture, and
+     * firing again would deliver the same interaction twice. Custom blocks are never covered by the
+     * native furniture events, so they always go through.
+     */
+    private boolean skip(String furnitureId, boolean nativeHooked) {
+        return furnitureId == null || furnitureId.isEmpty() || (nativeHooked && NexoUtils.isKnownFurniture(furnitureId));
+    }
+
+    private String furnitureId(Event event) {
+        Object mechanic = invoke(event, "getMechanic", Object.class);
+        if (mechanic == null) {
+            return null;
+        }
+        Object id = invoke(mechanic, "getItemID", Object.class);
+        return id instanceof String furnitureId && !furnitureId.isEmpty() ? furnitureId : null;
+    }
+
+    private <T> T invoke(Object source, String methodName, Class<T> type) {
+        if (source == null) {
+            return null;
+        }
+        try {
+            Method method = source.getClass().getMethod(methodName);
+            Object value = method.invoke(source);
+            return type.isInstance(value) ? type.cast(value) : null;
+        } catch (ReflectiveOperationException ignored) {
+            return null;
+        }
+    }
+
+    private void setResult(Object source, String methodName, Result result) {
+        try {
+            Method method = source.getClass().getMethod(methodName, Result.class);
+            method.invoke(source, result);
+        } catch (ReflectiveOperationException ignored) {
+            // Not every Nexo build exposes every result setter; cancellation above is the baseline.
         }
     }
 }
