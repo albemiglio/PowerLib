@@ -64,6 +64,9 @@ public final class NexoListener implements Listener {
                 listener.hookNative(plugin, NATIVE_INTERACT_EVENT, listener::handleNativeInteract);
         listener.nativeBreakHooked =
                 listener.hookNative(plugin, NATIVE_BREAK_EVENT, listener::handleNativeBreak);
+        // Placement has no Bukkit fallback to stand down (a plain block place cannot identify the
+        // furniture), so unlike interact and break there is no flag to keep: hooked or not, there is
+        // nothing else to suppress.
         listener.hookNative(plugin, NATIVE_PLACE_EVENT, listener::handleNativePlace);
         Bukkit.getPluginManager().registerEvents(listener, plugin);
         plugin.getLogger().info("[PowerLib] Nexo furniture bridge enabled.");

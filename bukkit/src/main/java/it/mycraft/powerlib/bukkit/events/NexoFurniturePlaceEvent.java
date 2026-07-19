@@ -42,7 +42,8 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
      * @param player        the player who placed the furniture
      * @param furnitureId   the Nexo id of the placed furniture
      * @param nexoFurniture the raw Nexo mechanic object
-     * @param block         the block the furniture was placed against, if any
+     * @param block         the block the furniture was placed against, if any; when it is {@code null}
+     *                      and the mechanic is not an entity, {@code getLocation()} is {@code null} too
      * @param itemInHand    the item used to place the furniture
      * @param hand          the hand the furniture was placed with
      */
