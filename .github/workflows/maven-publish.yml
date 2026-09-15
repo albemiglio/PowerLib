@@ -1,6 +1,5 @@
-# Build/test sanity check + SonarCloud analysis on every push & PR. Publishing
-# to CodeMC is handled by the CodeMC Jenkins job
-# (ci.codemc.io/job/AlbeMiglio/job/PowerLib), not here.
+# Build/test sanity check + SonarCloud analysis on every push & PR. Publishing is
+# handled by release.yml, on version tags.
 
 name: Build
 
