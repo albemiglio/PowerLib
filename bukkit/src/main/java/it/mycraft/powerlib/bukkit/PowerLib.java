@@ -21,12 +21,29 @@ public class PowerLib {
      * Initialises the library for the given plugin: stores it, creates the Adventure platform handle,
      * and registers the Nexo bridge if Nexo is installed. Call once from the plugin's {@code onEnable}.
      *
+     * <p>Idempotent: a previous initialisation is shut down first, so a reload does not leak an Adventure
+     * platform or leave a second Nexo bridge registered.
+     *
      * @param plugin the owning plugin
      */
     public static void inject(Plugin plugin) {
+        shutdown();
         PowerLib.plugin = plugin;
         adventure = BukkitAudiences.create(plugin);
         NexoListener.register(plugin); // no-op unless Nexo is installed
+    }
+
+    /**
+     * Releases what {@link #inject(Plugin)} acquired: detaches the Nexo bridge and closes the Adventure
+     * platform. Call from the owning plugin's {@code onDisable}. Safe to call twice.
+     */
+    public static void shutdown() {
+        NexoListener.unregister();
+        if (adventure != null) {
+            adventure.close();
+            adventure = null;
+        }
+        plugin = null;
     }
 
     /**
