@@ -65,10 +65,21 @@
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
-                                        <exclude>META-INF/**</exclude>
+                                        <!-- Drops signatures and build metadata of the shaded artifacts.
+                                             META-INF/services is deliberately kept: PowerLib discovers its
+                                             platform implementations through ServiceLoader, so a jar without
+                                             those descriptors silently does nothing. -->
+                                        <exclude>META-INF/*</exclude>
+                                        <exclude>META-INF/maven/**</exclude>
+                                        <exclude>META-INF/versions/**</exclude>
                                     </excludes>
                                 </filter>
                             </filters>
+                            <transformers>
+                                <!-- Merges the service descriptors of every shaded artifact and rewrites
+                                     them to follow the relocations above. -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                            </transformers>
                         </configuration>
                     </execution>
                 </executions>

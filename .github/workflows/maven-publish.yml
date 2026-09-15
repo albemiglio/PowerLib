@@ -51,6 +51,26 @@ jobs:
           mvn -B verify --file pom.xml
         fi
 
+    # The standalone plugins shade the platform modules, and the platform implementations are
+    # found through ServiceLoader: a shade filter that drops META-INF/services produces a jar
+    # that loads but does nothing, with no error anywhere. Fail the build instead.
+    - name: Check the shaded plugin jars keep their service descriptors
+      run: |
+        missing=0
+        for platform in bukkit bungee velocity; do
+          jar=$(ls "$platform-plugin"/target/powerlib-"$platform"-plugin-*.jar | grep -v -- '-javadoc\|-sources' | head -1)
+          for service in chat.AudienceProvider scheduler.PowerScheduler messaging.MessageTransport; do
+            entry="META-INF/services/it.mycraft.powerlib.common.$service"
+            if unzip -l "$jar" | grep -q "$entry"; then
+              echo "ok      $platform  $entry"
+            else
+              echo "MISSING $platform  $entry  (in $jar)"
+              missing=1
+            fi
+          done
+        done
+        exit $missing
+
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v4
       with:
