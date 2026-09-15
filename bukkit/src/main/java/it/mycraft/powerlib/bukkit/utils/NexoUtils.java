@@ -186,6 +186,28 @@ public final class NexoUtils {
     }
 
     /**
+     * Whether this block is Nexo <em>furniture</em> (its barrier hitbox) rather than a Nexo custom block.
+     * The two are told apart because Nexo reports furniture through its own native events while custom
+     * blocks are only visible through Bukkit's.
+     *
+     * @param block the block to test
+     * @return {@code true} if the block belongs to a Nexo furniture
+     */
+    public static boolean isFurniture(Block block) {
+        return AVAILABLE && block != null && invoke(furnitureFromBlock, null, block) != null;
+    }
+
+    /**
+     * Whether this entity is a Nexo furniture entity.
+     *
+     * @param entity the entity to test
+     * @return {@code true} if the entity belongs to a Nexo furniture
+     */
+    public static boolean isFurniture(Entity entity) {
+        return AVAILABLE && entity != null && invoke(furnitureFromEntity, null, entity) != null;
+    }
+
+    /**
      * @param item   the item to test
      * @param nexoId the Nexo id to match against
      * @return whether {@code item} is the Nexo item with the given id.

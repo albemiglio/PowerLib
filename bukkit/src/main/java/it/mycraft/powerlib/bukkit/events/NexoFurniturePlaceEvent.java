@@ -13,12 +13,13 @@ import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
 
 /**
- * Fired when a player places a Nexo furniture. Carries the Nexo id (and the raw Nexo mechanic as an
+ * Fired when a player places a Nexo furniture. Carries the Nexo id (and the raw base entity as an
  * {@code Object}) so downstream plugins can react without a direct Nexo dependency.
- * <p>
- * Unlike interact and break, placement has no Bukkit fallback: it is only fired when Nexo exposes its
- * native furniture place event, because the placed furniture cannot be identified reliably from a plain
- * block-place event.
+ *
+ * <p>Unlike {@link NexoFurnitureInteractEvent} and {@link NexoFurnitureBreakEvent}, placement cannot be
+ * derived from Bukkit events: the furniture entity is spawned by Nexo itself. This event is therefore
+ * fired only on servers whose Nexo build exposes a native placement event, and cancelling it cancels the
+ * placement itself.
  */
 @Getter
 public class NexoFurniturePlaceEvent extends Event implements Cancellable {
@@ -39,13 +40,12 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
     /**
      * Creates the event.
      *
-     * @param player        the player who placed the furniture
-     * @param furnitureId   the Nexo id of the placed furniture
-     * @param nexoFurniture the raw Nexo mechanic object
-     * @param block         the block the furniture was placed against, if any; when it is {@code null}
-     *                      and the mechanic is not an entity, {@code getLocation()} is {@code null} too
-     * @param itemInHand    the item used to place the furniture
-     * @param hand          the hand the furniture was placed with
+     * @param player        the player placing the furniture
+     * @param furnitureId   the Nexo id of the furniture being placed
+     * @param nexoFurniture the raw Nexo base entity
+     * @param block         the block the furniture is placed against, or {@code null}
+     * @param itemInHand    the item used to place the furniture, or {@code null}
+     * @param hand          the hand holding that item, or {@code null}
      */
     public NexoFurniturePlaceEvent(Player player, String furnitureId, Object nexoFurniture, Block block,
                                    ItemStack itemInHand, EquipmentSlot hand) {
@@ -56,6 +56,21 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
         this.location = resolveLocation(nexoFurniture, block);
         this.itemInHand = itemInHand;
         this.hand = hand;
+    }
+
+    /**
+     * Where the furniture is being placed: the base entity's location when there is one, otherwise the
+     * target block's, otherwise {@code null}.
+     *
+     * @param nexoFurniture the raw Nexo base entity
+     * @param block         the block the furniture is placed against
+     * @return the placement location, or {@code null} if neither is known
+     */
+    private static Location resolveLocation(Object nexoFurniture, Block block) {
+        if (nexoFurniture instanceof Entity entity) {
+            return entity.getLocation();
+        }
+        return block == null ? null : block.getLocation();
     }
 
     @Override
@@ -70,12 +85,5 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
      */
     public static HandlerList getHandlerList() {
         return HANDLERS;
-    }
-
-    private static Location resolveLocation(Object nexoFurniture, Block block) {
-        if (nexoFurniture instanceof Entity entity) {
-            return entity.getLocation();
-        }
-        return block != null ? block.getLocation() : null;
     }
 }
