@@ -38,6 +38,10 @@
             <id>matteodev</id>
             <url>https://maven.devs.beer/</url>
         </repository>
+        <repository>
+            <id>aikar</id>
+            <url>https://repo.aikar.co/content/groups/aikar/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -52,6 +56,16 @@
             <artifactId>paper-api</artifactId>
             <version>1.20.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
+        </dependency>
+        <!-- Only for commands.AcfTabCompletions: provided and optional, so it never reaches a consumer
+             that does not already ship ACF. A SNAPSHOT because repo.aikar.co publishes nothing else
+             (0.5.0-SNAPSHOT and 0.5.1-SNAPSHOT only); every Novaverse plugin builds against 0.5.1-SNAPSHOT. -->
+        <dependency>
+            <groupId>co.aikar</groupId>
+            <artifactId>acf-paper</artifactId>
+            <version>0.5.1-SNAPSHOT</version>
+            <scope>provided</scope>
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.mojang</groupId>
