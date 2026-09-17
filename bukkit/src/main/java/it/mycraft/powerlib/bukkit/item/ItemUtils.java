@@ -1,7 +1,6 @@
 package it.mycraft.powerlib.bukkit.item;
 
 import de.tr7zw.changeme.nbtapi.NBTItem;
-import dev.lone.itemsadder.api.CustomStack;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
