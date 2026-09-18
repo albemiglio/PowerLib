@@ -18,7 +18,11 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
     private final Player player;
-    private final StubFurnitureMechanic mechanic;
+    /**
+     * Loosely typed on purpose: PowerLib reads it reflectively, so a test can hand in the mechanic of a
+     * drifted Nexo build — one whose class no longer exposes {@code getItemID()} at all.
+     */
+    private final Object mechanic;
     private final Entity baseEntity;
     private final Block block;
     private final ItemStack itemInHand;
@@ -26,7 +30,7 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
 
     private boolean cancelled;
 
-    public NexoFurniturePlaceEvent(Player player, StubFurnitureMechanic mechanic, Entity baseEntity,
+    public NexoFurniturePlaceEvent(Player player, Object mechanic, Entity baseEntity,
                                    Block block, ItemStack itemInHand, EquipmentSlot hand) {
         this.player = player;
         this.mechanic = mechanic;
@@ -40,7 +44,7 @@ public class NexoFurniturePlaceEvent extends Event implements Cancellable {
         return player;
     }
 
-    public StubFurnitureMechanic getMechanic() {
+    public Object getMechanic() {
         return mechanic;
     }
 

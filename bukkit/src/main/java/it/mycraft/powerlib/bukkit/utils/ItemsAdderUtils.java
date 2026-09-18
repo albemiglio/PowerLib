@@ -29,16 +29,25 @@ public final class ItemsAdderUtils {
     private static Method getItemStack; // <CustomStack>.getItemStack() -> ItemStack
 
     static {
-        AVAILABLE = bind();
+        AVAILABLE = bind("dev.lone.itemsadder.api.CustomStack");
     }
 
     private ItemsAdderUtils() {
     }
 
-    private static boolean bind() {
+    /**
+     * Resolves the three {@code CustomStack} members this bridge needs from the named class. Split from
+     * the initializer above — and kept package-private — so both failure paths ("ItemsAdder absent" and
+     * "ItemsAdder present with a drifted API") are unit-testable without the real plugin on the
+     * classpath, the same seam {@link NexoUtils#bindFurnitureHandles(Class)} exists for.
+     *
+     * @param className the fully qualified name of ItemsAdder's {@code CustomStack}
+     * @return {@code true} when every member was resolved
+     */
+    static boolean bind(String className) {
         Class<?> customStack;
         try {
-            customStack = Class.forName("dev.lone.itemsadder.api.CustomStack");
+            customStack = Class.forName(className);
         } catch (ClassNotFoundException | LinkageError absent) {
             return false; // ItemsAdder not installed — stay inert, quietly
         }

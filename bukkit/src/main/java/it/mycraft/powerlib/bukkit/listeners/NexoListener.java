@@ -74,6 +74,19 @@ public final class NexoListener implements Listener {
         if (!NexoUtils.isAvailable()) {
             return;
         }
+        attach(plugin);
+    }
+
+    /**
+     * Wires a fresh bridge to {@code plugin}: the Bukkit handlers through the plugin manager, and every
+     * native Nexo event this build publishes through its own dynamic registration. Split from
+     * {@link #register(Plugin)} — and kept package-private — so the wiring is unit-testable against the
+     * stand-in event classes without a live Nexo deciding whether it runs at all (see
+     * {@code NexoRegistrationTest}), for the same reason {@link #bindNativeEvents()} is.
+     *
+     * @param plugin the plugin to register the listener under
+     */
+    static void attach(Plugin plugin) {
         unregister();
 
         NexoListener listener = bindNativeEvents();

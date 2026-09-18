@@ -18,32 +18,50 @@ public class NexoFurnitureInteractEvent extends Event implements Cancellable {
     private static final HandlerList HANDLERS = new HandlerList();
 
     private final Player player;
-    private final StubFurnitureMechanic mechanic;
+    /**
+     * Loosely typed on purpose: PowerLib reads it reflectively, so a test can hand in the mechanic of a
+     * drifted Nexo build — one whose class no longer exposes {@code getItemID()} at all.
+     */
+    private final Object mechanic;
     private final Entity baseEntity;
     private final EquipmentSlot hand;
+    private final RuntimeException baseEntityFailure;
 
     private boolean cancelled;
     private Result useFurniture = Result.DEFAULT;
     private Result useItemInHand = Result.DEFAULT;
     private Result canRunAction = Result.DEFAULT;
 
-    public NexoFurnitureInteractEvent(Player player, StubFurnitureMechanic mechanic, Entity baseEntity,
+    public NexoFurnitureInteractEvent(Player player, Object mechanic, Entity baseEntity,
                                       EquipmentSlot hand) {
+        this(player, mechanic, baseEntity, hand, null);
+    }
+
+    /**
+     * @param baseEntityFailure what {@link #getBaseEntity()} throws instead of answering, the way Nexo's
+     *                          own Kotlin accessor does for furniture that is already gone
+     */
+    public NexoFurnitureInteractEvent(Player player, Object mechanic, Entity baseEntity, EquipmentSlot hand,
+                                      RuntimeException baseEntityFailure) {
         this.player = player;
         this.mechanic = mechanic;
         this.baseEntity = baseEntity;
         this.hand = hand;
+        this.baseEntityFailure = baseEntityFailure;
     }
 
     public Player getPlayer() {
         return player;
     }
 
-    public StubFurnitureMechanic getMechanic() {
+    public Object getMechanic() {
         return mechanic;
     }
 
     public Entity getBaseEntity() {
+        if (baseEntityFailure != null) {
+            throw baseEntityFailure;
+        }
         return baseEntity;
     }
 

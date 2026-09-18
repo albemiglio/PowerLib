@@ -5,6 +5,7 @@ import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
 import be.seeseemelk.mockbukkit.entity.SimpleEntityMock;
 import it.mycraft.powerlib.bukkit.events.NexoFurnitureBreakEvent;
+import it.mycraft.powerlib.bukkit.events.NexoFurnitureInteractEvent;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Cancellable;
@@ -59,6 +60,14 @@ class NexoListenerTest {
                                         Cancellable source) throws ReflectiveOperationException {
         Method m = NexoListener.class.getDeclaredMethod(
                 "fireBreak", Player.class, String.class, Object.class, Cancellable.class);
+        m.setAccessible(true);
+        m.invoke(listener, player, id, furniture, source);
+    }
+
+    private static void invokeFire(NexoListener listener, Player player, String id, Object furniture,
+                                   Cancellable source) throws ReflectiveOperationException {
+        Method m = NexoListener.class.getDeclaredMethod(
+                "fire", Player.class, String.class, Object.class, Cancellable.class);
         m.setAccessible(true);
         m.invoke(listener, player, id, furniture, source);
     }
@@ -135,6 +144,68 @@ class NexoListenerTest {
 
         invokeFireBreak(listener, server.addPlayer(), null, new Object(), nullId);
         invokeFireBreak(listener, server.addPlayer(), "", new Object(), emptyId);
+
+        assertThat(captured.get()).isNull();
+        assertThat(nullId.isCancelled()).isFalse();
+        assertThat(emptyId.isCancelled()).isFalse();
+    }
+
+    @Test
+    void fireEmitsAnInteractEventAndPropagatesCancellationToTheSource() throws ReflectiveOperationException {
+        AtomicReference<NexoFurnitureInteractEvent> captured = new AtomicReference<>();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onInteract(NexoFurnitureInteractEvent event) {
+                captured.set(event);
+                event.setCancelled(true);
+            }
+        }, plugin);
+
+        PlayerMock player = server.addPlayer();
+        Object block = new Object();
+        Cancellable source = simpleCancellable();
+
+        invokeFire(newListener(), player, "chair", block, source);
+
+        assertThat(captured.get()).isNotNull();
+        assertThat(captured.get().getPlayer()).isSameAs(player);
+        assertThat(captured.get().getFurnitureId()).isEqualTo("chair");
+        assertThat(captured.get().getNexoFurniture()).isSameAs(block);
+        // Cancelling the bridge event must cancel the right-click that caused it.
+        assertThat(source.isCancelled()).isTrue();
+    }
+
+    @Test
+    void fireLeavesTheSourceUncancelledWhenNoHandlerCancels() throws ReflectiveOperationException {
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onInteract(NexoFurnitureInteractEvent event) {
+                // observe only, never cancel
+            }
+        }, plugin);
+
+        Cancellable source = simpleCancellable();
+        invokeFire(newListener(), server.addPlayer(), "chair", new Object(), source);
+
+        assertThat(source.isCancelled()).isFalse();
+    }
+
+    @Test
+    void fireIgnoresNullAndEmptyIds() throws ReflectiveOperationException {
+        AtomicReference<NexoFurnitureInteractEvent> captured = new AtomicReference<>();
+        server.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onInteract(NexoFurnitureInteractEvent event) {
+                captured.set(event);
+            }
+        }, plugin);
+
+        NexoListener listener = newListener();
+        Cancellable nullId = simpleCancellable();
+        Cancellable emptyId = simpleCancellable();
+
+        invokeFire(listener, server.addPlayer(), null, new Object(), nullId);
+        invokeFire(listener, server.addPlayer(), "", new Object(), emptyId);
 
         assertThat(captured.get()).isNull();
         assertThat(nullId.isCancelled()).isFalse();

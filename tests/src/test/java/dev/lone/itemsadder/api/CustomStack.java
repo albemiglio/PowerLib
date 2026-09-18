@@ -17,6 +17,9 @@ public class CustomStack {
 
     private static final Map<String, ItemStack> REGISTRY = new HashMap<>();
 
+    /** When set, every registry lookup throws, the way the real plugin does before its items are loaded. */
+    private static RuntimeException failure;
+
     private final ItemStack itemStack;
 
     private CustomStack(ItemStack itemStack) {
@@ -29,9 +32,22 @@ public class CustomStack {
 
     public static void clear() {
         REGISTRY.clear();
+        failure = null;
+    }
+
+    /**
+     * Makes every subsequent registry lookup throw.
+     *
+     * @param thrown what the lookup throws, or {@code null} to look items up normally again
+     */
+    public static void failWith(RuntimeException thrown) {
+        failure = thrown;
     }
 
     public static boolean isInRegistry(String id) {
+        if (failure != null) {
+            throw failure;
+        }
         return REGISTRY.containsKey(id);
     }
 
