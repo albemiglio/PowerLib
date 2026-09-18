@@ -285,13 +285,34 @@ public final class NexoUtils {
     }
 
     private static boolean isFurniture(String furnitureId) {
-        if (furnIsFurniture == null) {
-            return true; // can't verify — assume it is and let placeFurniture surface the real error
+        // Can't verify — assume it is and let placeFurniture surface the real error.
+        return !Boolean.FALSE.equals(furnitureLookup(furnitureId));
+    }
+
+    /**
+     * Whether {@code nexoId} is known to be a furniture id rather than a custom block. Unlike the
+     * internal check used before placing furniture, this answers {@code false} when Nexo cannot tell:
+     * callers use it to hand work over to the native furniture events, so an unverifiable id must keep
+     * taking the Bukkit path instead of being silently dropped.
+     *
+     * @param nexoId the Nexo id to test
+     * @return {@code true} only when Nexo confirms it is furniture
+     */
+    public static boolean isKnownFurniture(String nexoId) {
+        return Boolean.TRUE.equals(furnitureLookup(nexoId));
+    }
+
+    private static Boolean furnitureLookup(String nexoId) {
+        // Deliberately not gated on AVAILABLE: the handle is bound on its own (and by the tests against a
+        // stand-in provider), so gating here would answer "unknown" for ids Nexo can actually resolve.
+        if (furnIsFurniture == null || nexoId == null) {
+            return null;
         }
         try {
-            return Boolean.TRUE.equals(furnIsFurniture.invoke(null, furnitureId));
+            Object value = furnIsFurniture.invoke(null, nexoId);
+            return value instanceof Boolean furniture ? furniture : null;
         } catch (ReflectiveOperationException | RuntimeException ignored) {
-            return true;
+            return null;
         }
     }
 
@@ -313,7 +334,19 @@ public final class NexoUtils {
         return furniture;
     }
 
-    private static boolean removeFurniture(Object furniture, Location location, Player player) {
+    /**
+     * Removes a Nexo furniture, cleaning up its base entity and barrier hitbox through Nexo itself.
+     * <p>
+     * The furniture is removed <strong>without dropping anything</strong>: this is a despawn, not a
+     * break, so use it for scripted disappearances and stage changes rather than to simulate a player
+     * breaking the furniture. Failures are reported through {@link #getLastFurnitureError()}.
+     *
+     * @param furniture the raw Nexo mechanic or base entity, if known
+     * @param location  the furniture location, used when {@code furniture} cannot be resolved
+     * @param player    the player the removal is attributed to, may be {@code null}
+     * @return whether the furniture was removed
+     */
+    public static boolean removeFurniture(Object furniture, Location location, Player player) {
         Object emptyDrop = emptyDrop();
         if (furniture instanceof Entity) {
             Entity entity = (Entity) furniture;
@@ -342,7 +375,17 @@ public final class NexoUtils {
         return false;
     }
 
-    private static boolean placeFurniture(String furnitureId, Location location, float yaw, BlockFace blockFace) {
+    /**
+     * Places the Nexo furniture with the given id, letting Nexo spawn its base entity and barrier
+     * hitbox. Failures are reported through {@link #getLastFurnitureError()}.
+     *
+     * @param furnitureId the Nexo id of the furniture to place
+     * @param location    where to place it
+     * @param yaw         the yaw to place it with
+     * @param blockFace   the face the furniture is placed against
+     * @return whether the furniture was placed
+     */
+    public static boolean placeFurniture(String furnitureId, Location location, float yaw, BlockFace blockFace) {
         if (furnPlace == null) {
             lastFurnitureError.set("No compatible NexoFurniture.place(String, Location, yaw/Rotation, BlockFace) method is available");
             return false;
