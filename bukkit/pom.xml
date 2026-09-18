@@ -49,6 +49,18 @@
             <version>1.20.4-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
+        <!-- Only for commands.AcfTabCompletions: provided and optional, so it never reaches a consumer
+             that does not already ship ACF. A SNAPSHOT because ACF publishes nothing else (0.5.0-SNAPSHOT
+             and 0.5.1-SNAPSHOT only); every Novaverse plugin builds against 0.5.1-SNAPSHOT. It resolves
+             from repo.papermc.io, already declared above for paper-api: no extra third-party repository,
+             which is what dragged every cold-cache build down when maven.devs.beer went offline. -->
+        <dependency>
+            <groupId>co.aikar</groupId>
+            <artifactId>acf-paper</artifactId>
+            <version>0.5.1-SNAPSHOT</version>
+            <scope>provided</scope>
+            <optional>true</optional>
+        </dependency>
         <dependency>
             <groupId>com.mojang</groupId>
             <artifactId>authlib</artifactId>
