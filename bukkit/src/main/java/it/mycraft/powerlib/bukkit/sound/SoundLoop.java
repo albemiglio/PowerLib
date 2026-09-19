@@ -60,7 +60,7 @@ public final class SoundLoop {
      * @throws IllegalArgumentException if the sound is {@code null} or carries no repeat interval
      */
     public SoundLoop(PowerSound sound) {
-        this(sound, sound == null ? 0L : sound.getLoopTicks());
+        this(requireSound(sound), sound.getLoopTicks());
     }
 
     /**
@@ -72,17 +72,27 @@ public final class SoundLoop {
      * @throws IllegalArgumentException if the sound is {@code null} or the interval is not positive
      */
     public SoundLoop(PowerSound sound, long periodTicks) {
-        if (sound == null) {
-            throw new IllegalArgumentException("A SoundLoop needs a sound");
-        }
+        this.sound = requireSound(sound);
         if (periodTicks < 1L) {
             // Clamping to 1 would replay the sound every tick, which is a deafening way to find out about
             // a config typo. A sound that should not repeat is a one-shot, not a loop without a period.
             throw new IllegalArgumentException("A SoundLoop needs a positive period, got " + periodTicks
                     + "; use PowerSound.play(...) for a one-shot");
         }
-        this.sound = sound;
         this.periodTicks = periodTicks;
+    }
+
+    /**
+     * Rejects a missing sound once, before either constructor can use it. Validating here rather than
+     * inside the delegating constructor keeps the null out of {@code this(...)} entirely: an argument
+     * computed as "0 ticks when the sound is null" reaches the other constructor only to be thrown out
+     * of, which reads — to a reader and to a static analyser alike — as a call that always fails.
+     */
+    private static PowerSound requireSound(PowerSound sound) {
+        if (sound == null) {
+            throw new IllegalArgumentException("A SoundLoop needs a sound");
+        }
+        return sound;
     }
 
     /**

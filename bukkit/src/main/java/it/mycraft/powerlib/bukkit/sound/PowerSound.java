@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A configurable sound, played by <em>key</em> rather than by {@link org.bukkit.Sound} constant, so one
@@ -70,11 +71,13 @@ public final class PowerSound {
      * overwrite each other: the first wins, so the mapping stays stable between restarts.
      *
      * <p>{@link #key(String)} is public and static, so nothing stops a consumer from calling it off the
-     * main thread. The field is therefore {@code volatile} and only ever assigned a fully-built immutable
-     * map: a race can at worst build the map twice, which is idempotent, and never publish a half-built
-     * one. Reading the registry itself needs no lock — it does not change after startup.
+     * main thread. The cache is therefore held in an {@link AtomicReference} and only ever given a
+     * fully-built immutable map: a race can at worst build the map twice, which is idempotent, and never
+     * publishes a half-built one. A {@code volatile} field would carry the same happens-before guarantee
+     * for the reference but say nothing about what it points at; the reference type says both.
+     * Reading the registry itself needs no lock — it does not change after startup.
      */
-    private static volatile Map<String, String> legacyNames;
+    private static final AtomicReference<Map<String, String>> legacyNames = new AtomicReference<>();
 
     private final String key;
     private final SoundCategory category;
@@ -336,7 +339,7 @@ public final class PowerSound {
     }
 
     private static Map<String, String> legacyNames() {
-        Map<String, String> cached = legacyNames;
+        Map<String, String> cached = legacyNames.get();
         if (cached != null) {
             return cached;
         }
@@ -353,7 +356,7 @@ public final class PowerSound {
             return Map.of();
         }
         cached = Map.copyOf(byLegacyName);
-        legacyNames = cached;
+        legacyNames.set(cached);
         return cached;
     }
 
