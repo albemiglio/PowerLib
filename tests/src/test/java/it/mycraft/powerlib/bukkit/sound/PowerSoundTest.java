@@ -1,7 +1,12 @@
 package it.mycraft.powerlib.bukkit.sound;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
+import be.seeseemelk.mockbukkit.ServerMock;
+import be.seeseemelk.mockbukkit.entity.PlayerMock;
+import be.seeseemelk.mockbukkit.sound.AudioExperience;
+import org.bukkit.Location;
 import org.bukkit.SoundCategory;
+import org.bukkit.World;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,9 +29,11 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
  */
 class PowerSoundTest {
 
+    private ServerMock server;
+
     @BeforeEach
     void setUp() {
-        MockBukkit.mock();
+        server = MockBukkit.mock();
     }
 
     @AfterEach
@@ -176,6 +183,118 @@ class PowerSoundTest {
         assertThatIllegalArgumentException().isThrownBy(() -> new SoundLoop(oneShot));
         assertThatIllegalArgumentException().isThrownBy(() -> new SoundLoop(oneShot, 0L));
         assertThatIllegalArgumentException().isThrownBy(() -> new SoundLoop(null, 20L));
+    }
+
+    @Test
+    void buildsFromAlreadyParsedValues() {
+        // The factory a plugin calls when the values do not come from a config at all.
+        PowerSound sound = PowerSound.of("NEXO:Phone.Ring", null, 0.3f, 1.4f, -5L);
+
+        assertThat(sound).isNotNull();
+        assertThat(sound.getKey()).isEqualTo("nexo:phone.ring");
+        assertThat(sound.getCategory()).isEqualTo(SoundCategory.MASTER);
+        assertThat(sound.getVolume()).isEqualTo(0.3f);
+        assertThat(sound.getPitch()).isEqualTo(1.4f);
+        // A negative interval is a one-shot, not a loop running backwards.
+        assertThat(sound.getLoopTicks()).isZero();
+        assertThat(sound.isLooping()).isFalse();
+        assertThat(PowerSound.of("none", SoundCategory.PLAYERS, 1.0f, 1.0f, 20L)).isNull();
+    }
+
+    @Test
+    void fallsBackToTheDefaultWhenANumberIsNotANumber() {
+        // "volume: loud" is a typo an admin can type; it must cost the default, not the sound.
+        PowerSound sound = PowerSound.parse("nexo:phone.ring;loud;1.0");
+
+        assertThat(sound).isNotNull();
+        assertThat(sound.getVolume()).isEqualTo(1.0f);
+    }
+
+    @Test
+    void playsToOneListenerWithTheConfiguredValues() {
+        server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+        PowerSound sound = PowerSound.parse("nexo:phone.ring;0.4;1.6;PLAYERS");
+
+        sound.play(player);
+
+        assertThat(player.getHeardSounds()).hasSize(1);
+        AudioExperience heard = player.getHeardSounds().get(0);
+        assertThat(heard.getSound()).isEqualTo("nexo:phone.ring");
+        assertThat(heard.getCategory()).isEqualTo(SoundCategory.PLAYERS);
+        assertThat(heard.getVolume()).isEqualTo(0.4f);
+        assertThat(heard.getPitch()).isEqualTo(1.6f);
+    }
+
+    @Test
+    void playsFromAGivenPointSoTheSoundHasADirection() {
+        World world = server.addSimpleWorld("world");
+        PlayerMock player = server.addPlayer();
+        Location source = new Location(world, 10.0d, 64.0d, -5.0d);
+
+        PowerSound.parse("nexo:phone.ring").play(player, source);
+
+        assertThat(player.getHeardSounds()).hasSize(1);
+        assertThat(player.getHeardSounds().get(0).getLocation()).isEqualTo(source);
+    }
+
+    @Test
+    void playAtIsHeardByEveryoneInTheWorld() {
+        World world = server.addSimpleWorld("world");
+        PlayerMock first = server.addPlayer();
+        PlayerMock second = server.addPlayer();
+
+        PowerSound.parse("nexo:siren.wail").playAt(new Location(world, 0.0d, 64.0d, 0.0d));
+
+        assertThat(first.getHeardSounds()).hasSize(1);
+        assertThat(second.getHeardSounds()).hasSize(1);
+        assertThat(first.getHeardSounds().get(0).getSound()).isEqualTo("nexo:siren.wail");
+    }
+
+    @Test
+    void playsNothingWhenThereIsNowhereOrNobodyToPlayTo() {
+        server.addSimpleWorld("world");
+        PlayerMock offline = server.addPlayer();
+        offline.disconnect();
+        PowerSound sound = PowerSound.parse("nexo:phone.ring");
+
+        sound.play(null);
+        sound.play(offline);
+        sound.play(null, offline.getLocation());
+        sound.play(offline, offline.getLocation());
+        sound.play(server.addPlayer(), null);
+        sound.playAt(null);
+        sound.playAt(new Location(null, 0.0d, 64.0d, 0.0d));
+
+        assertThat(offline.getHeardSounds()).isEmpty();
+        assertThat(server.getOnlinePlayers()).allSatisfy(player ->
+                assertThat(player.getHeardSounds()).isEmpty());
+    }
+
+    @Test
+    void stopSilencesOnlyAnOnlineListener() {
+        server.addSimpleWorld("world");
+        PlayerMock offline = server.addPlayer();
+        offline.disconnect();
+        PowerSound sound = PowerSound.parse("nexo:phone.ring");
+
+        // No client to talk to: the call has to be a no-op rather than an exception on the caller's tick.
+        assertThatCode(() -> {
+            sound.stop(null);
+            sound.stop(offline);
+        }).doesNotThrowAnyException();
+    }
+
+    @Test
+    void describesItselfWithEverythingThatAffectsPlayback() {
+        PowerSound sound = PowerSound.parse("nexo:phone.ring;0.4;1.6;PLAYERS;40");
+
+        assertThat(sound.toString())
+                .contains("nexo:phone.ring")
+                .contains("PLAYERS")
+                .contains("volume=0.4")
+                .contains("pitch=1.6")
+                .contains("loopTicks=40");
     }
 
     @Test
