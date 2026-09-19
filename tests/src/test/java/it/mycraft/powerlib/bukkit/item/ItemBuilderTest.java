@@ -1,6 +1,7 @@
 package it.mycraft.powerlib.bukkit.item;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
+import dev.lone.itemsadder.api.CustomStack;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -44,6 +45,7 @@ class ItemBuilderTest {
 
     @AfterEach
     void tearDown() {
+        CustomStack.clear();
         MockBukkit.unmock();
     }
 
@@ -89,6 +91,28 @@ class ItemBuilderTest {
         ItemBuilder builder = new ItemBuilder().setMaterial("nexo:badge_card");
         assertThat(builder.getMaterial()).isEqualTo("nexo:badge_card");
         assertThat(builder.build().getType()).isEqualTo(Material.BARRIER);
+    }
+
+    @Test
+    void itemsAdderMaterialStringBuildsTheRegisteredCustomItem() {
+        // "itemsadder:<id>" only resolves when ItemsAdder is actually running: the branch is gated on the
+        // plugin being enabled, so the id is looked up against the (stand-in) ItemsAdder registry here.
+        MockBukkit.createMockPlugin("ItemsAdder");
+        CustomStack.register("badge", new ItemStack(Material.PAPER));
+
+        ItemStack stack = new ItemBuilder().setMaterial("itemsadder:badge").build();
+
+        assertThat(stack.getType()).isEqualTo(Material.PAPER);
+    }
+
+    @Test
+    void anUnknownItemsAdderIdFallsBackToBarrier() {
+        // A typo in a config must be visible in game as a barrier, not silently become stone.
+        MockBukkit.createMockPlugin("ItemsAdder");
+
+        ItemStack stack = new ItemBuilder().setMaterial("itemsadder:nope").build();
+
+        assertThat(stack.getType()).isEqualTo(Material.BARRIER);
     }
 
     @Test

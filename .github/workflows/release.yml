@@ -1,10 +1,15 @@
-# Publishes every PowerLib module (it.mycraft:powerlib-*) to GitHub Packages on each
-# version tag — fully automatic, no manual step, using the built-in GITHUB_TOKEN. The
-# published version is taken from the tag (tag 1.3.7 -> artifacts 1.3.7), so no pom edit
-# is needed to cut a release: just push a X.Y.Z tag.
-# Consumers resolve from https://maven.pkg.github.com/albemiglio/PowerLib. An optional
-# second deploy to a private Maven repository runs only when its secrets are configured.
-# CodeMC is NOT published from here: it is a separate Jenkins job that builds the repo.
+# Publishes every PowerLib module (it.mycraft:powerlib-*) on each version tag — fully automatic,
+# no manual step. The published version is taken from the tag (tag 1.4.0 -> artifacts 1.4.0), so no
+# pom edit is needed to cut a release: just push a X.Y.Z tag.
+#
+# Three destinations, each independent; a destination whose credentials are not configured is
+# skipped with a message instead of failing the run:
+#   * GitHub Packages  — always, with the built-in GITHUB_TOKEN.
+#                        https://maven.pkg.github.com/albemiglio/PowerLib
+#   * CodeMC           — the public distribution channel already declared in the root pom.
+#                        Needs the CODEMC_USERNAME / CODEMC_PASSWORD secrets.
+#   * a private repo   — optional, for consumers outside the public channel.
+#                        Needs MAVEN_PRIVATE_URL / MAVEN_PRIVATE_USER / MAVEN_PRIVATE_PASS.
 name: Release
 
 on:
@@ -47,8 +52,30 @@ jobs:
         ./mvnw -B -ntp -DskipTests -Dmaven.javadoc.skip=true \
           deploy -DaltDeploymentRepository=github::https://maven.pkg.github.com/albemiglio/PowerLib
 
-    # Second server: setup-java writes settings.xml for one server-id at a time, so the
-    # github one above is regenerated here for the private-repository deploy.
+    # setup-java writes settings.xml for one server-id at a time, so each further destination
+    # regenerates it with its own credentials.
+    - name: Set up Maven server for CodeMC
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: maven
+        server-id: codemc-releases
+        server-username: CODEMC_USERNAME
+        server-password: CODEMC_PASSWORD
+
+    - name: Deploy all modules to CodeMC
+      env:
+        CODEMC_USERNAME: ${{ secrets.CODEMC_USERNAME }}
+        CODEMC_PASSWORD: ${{ secrets.CODEMC_PASSWORD }}
+      run: |
+        if [ -z "$CODEMC_USERNAME" ] || [ -z "$CODEMC_PASSWORD" ]; then
+          echo "CodeMC credentials not configured (CODEMC_USERNAME / CODEMC_PASSWORD) - skipping."
+          exit 0
+        fi
+        ./mvnw -B -ntp -DskipTests -Dmaven.javadoc.skip=true \
+          deploy -DaltDeploymentRepository=codemc-releases::https://repo.codemc.io/repository/maven-releases/
+
     - name: Set up Maven server for the private repository
       uses: actions/setup-java@v4
       with:

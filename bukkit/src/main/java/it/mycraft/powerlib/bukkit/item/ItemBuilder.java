@@ -5,11 +5,11 @@ import com.mojang.authlib.GameProfile;
 import com.mojang.authlib.properties.Property;
 import de.tr7zw.changeme.nbtapi.NBTCompound;
 import de.tr7zw.changeme.nbtapi.NBTItem;
-import dev.lone.itemsadder.api.CustomStack;
 import it.mycraft.powerlib.bukkit.config.ConfigurationAdapter;
 import it.mycraft.powerlib.bukkit.reflection.ReflectionAPI;
 import it.mycraft.powerlib.common.chat.Message;
 import it.mycraft.powerlib.common.configuration.Configuration;
+import it.mycraft.powerlib.bukkit.utils.ItemsAdderUtils;
 import it.mycraft.powerlib.bukkit.utils.NexoUtils;
 import it.mycraft.powerlib.common.objects.Pair;
 import it.mycraft.powerlib.common.utils.ColorAPI;
@@ -475,9 +475,9 @@ public class ItemBuilder implements Cloneable {
         ItemStack itemStack;
         try {
             if (material.startsWith("itemsadder:") && isUsingItemsAdder()) {
-                String customItem = material.substring("itemsadder:".length());
-                if (CustomStack.isInRegistry(customItem)) {
-                    itemStack = CustomStack.getInstance(customItem).getItemStack();
+                ItemStack customItem = ItemsAdderUtils.itemStackFromId(material.substring("itemsadder:".length()));
+                if (customItem != null) {
+                    itemStack = customItem;
                 } else {
                     // fallback if custom stack missing
                     itemStack = new ItemStack(Material.BARRIER, amount, metadata);

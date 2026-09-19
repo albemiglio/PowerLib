@@ -173,6 +173,22 @@ class NexoUtilsFurnitureTest {
     }
 
     @Test
+    void isKnownFurnitureAnswersFalseWhenNexoCannotConfirmIt() {
+        // The Nexo bridge stands the Bukkit fallback down only for ids it can confirm as furniture:
+        // answering true on an unverifiable id would silently drop custom block interactions, which
+        // the native furniture events do not cover.
+        StubNexoFurniture.furnitureFlag = true;
+        NexoUtils.bindFurnitureHandles(StubNexoFurniture.class);
+        assertThat(NexoUtils.isKnownFurniture("chair")).isTrue();
+
+        StubNexoFurniture.furnitureFlag = false;
+        assertThat(NexoUtils.isKnownFurniture("a_custom_block")).isFalse();
+
+        StubNexoFurniture.isFurnitureThrows = true;
+        assertThat(NexoUtils.isKnownFurniture("chair")).isFalse();
+    }
+
+    @Test
     void reportsWhenNexoCannotRemoveTheOldFurniture() {
         StubNexoFurniture.removeResult = false;
         NexoUtils.bindFurnitureHandles(StubNexoFurniture.class);
